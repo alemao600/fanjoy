@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Conta - Fanjoy Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f8f9fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #ff6bce, #7c3aed);
+      color: white;
+      padding: 20px 40px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      text-decoration: none;
+      color: white;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-primary {
+      background: white;
+      color: #ff6bce;
+    }
+
+    .btn-primary:hover {
+      background: #f9fafb;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .profile-header {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ff6bce, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .profile-header p {
+      color: #6b7280;
+      font-size: 15px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: white;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: #ff6bce;
+      border-color: #ff6bce;
+      background: rgba(255, 107, 206, 0.05);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #1a1a2e;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #ff6bce;
+      box-shadow: 0 0 0 4px rgba(255, 107, 206, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #ff6bce, #7c3aed);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 107, 206, 0.4);
+    }
+
+    .address-card {
+      background: rgba(255, 107, 206, 0.05);
+      border: 2px solid rgba(255, 107, 206, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .address-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ff6bce;
+    }
+
+    .address-card p {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .address-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-small {
+      padding: 6px 14px;
+      font-size: 13px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-edit {
+      background: #f3f4f6;
+      color: #1a1a2e;
+    }
+
+    .btn-edit:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-delete {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+    }
+
+    .btn-delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .order-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .order-id {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .order-date {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .order-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: rgba(251, 191, 36, 0.2);
+      color: #d97706;
+    }
+
+    .status-confirmed {
+      background: rgba(59, 130, 246, 0.2);
+      color: #2563eb;
+    }
+
+    .status-shipped {
+      background: rgba(139, 92, 246, 0.2);
+      color: #7c3aed;
+    }
+
+    .status-delivered {
+      background: rgba(34, 197, 94, 0.2);
+      color: #16a34a;
+    }
+
+    .status-cancelled {
+      background: rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+    }
+
+    .order-items {
+      margin-bottom: 12px;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .order-item:last-child {
+      border-bottom: none;
+    }
+
+    .order-item-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f3f4f6;
+    }
+
+    .order-item-info {
+      flex: 1;
+    }
+
+    .order-item-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .order-item-details {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .order-total {
+      text-align: right;
+      font-size: 18px;
+      font-weight: 800;
+      color: #ff6bce;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 2px solid #f3f4f6;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: #1a1a2e;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #6b7280;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-close:hover {
+      background: #f3f4f6;
+      color: #1a1a2e;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .message.success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .message.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .tabs {
+        flex-wrap: nowrap;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .order-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <a href="index.html" class="logo">🛍️ Fanjoy Lab</a>
+      <div class="header-actions">
+        <span>Olá, <strong id="customerName">Cliente</strong></span>
+        <button class="btn btn-secondary" onclick="logout()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="profile-header">
+      <h1>Minha Conta</h1>
+      <p>Gerencie suas informações, endereços e acompanhe seus pedidos</p>
+    </div>
+
+    <div id="successMessage" class="message success">
+      Informações salvas com sucesso!
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('profile')">Meus Dados</button>
+      <button class="tab" onclick="switchTab('addresses')">Endereços</button>
+      <button class="tab" onclick="switchTab('orders')">Histórico de Pedidos</button>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="profileTab" class="tab-content active">
+      <div class="section-card">
+        <h2>Informações Pessoais</h2>
+        <form id="profileForm" onsubmit="saveProfile(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="profileName">Nome</label>
+              <input type="text" id="profileName" required>
+            </div>
+            <div class="form-group">
+              <label for="profileLastName">Sobrenome</label>
+              <input type="text" id="profileLastName" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="profileEmail">E-mail</label>
+              <input type="email" id="profileEmail" required>
+            </div>
+            <div class="form-group">
+              <label for="profilePhone">Telefone</label>
+              <input type="tel" id="profilePhone" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Salvar Alterações</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Addresses Tab -->
+    <div id="addressesTab" class="tab-content">
+      <div class="section-card">
+        <h2>
+          <span>Meus Endereços</span>
+          <button class="btn-save" onclick="openAddressModal()">+ Adicionar Endereço</button>
+        </h2>
+        <div id="addressesList"></div>
+      </div>
+    </div>
+
+    <!-- Orders Tab -->
+    <div id="ordersTab" class="tab-content">
+      <div class="section-card">
+        <h2>Histórico de Pedidos</h2>
+        <div id="ordersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Address Modal -->
+  <div id="addressModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="addressModalTitle">Adicionar Endereço</h2>
+        <button class="btn-close" onclick="closeAddressModal()">&times;</button>
+      </div>
+      <form id="addressForm" onsubmit="saveAddress(event)">
+        <input type="hidden" id="addressId">
+        
+        <div class="form-group">
+          <label for="addressLabel">Nome do Endereço (ex: Casa, Trabalho)</label>
+          <input type="text" id="addressLabel" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addressCEP">CEP</label>
+            <input type="text" id="addressCEP" maxlength="9" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="addressStreet">Rua</label>
+          <input type="text" id="addressStreet" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addressNumber">Número</label>
+            <input type="text" id="addressNumber" required>
+          </div>
+          <div class="form-group">
+            <label for="addressComplement">Complemento</label>
+            <input type="text" id="addressComplement">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="addressNeighborhood">Bairro</label>
+          <input type="text" id="addressNeighborhood" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="addressCity">Cidade</label>
+            <input type="text" id="addressCity" required>
+          </div>
+          <div class="form-group">
+            <label for="addressState">Estado</label>
+            <select id="addressState" required>
+              <option value="">Selecione</option>
+              <option value="AC">Acre</option>
+              <option value="AL">Alagoas</option>
+              <option value="AP">Amapá</option>
+              <option value="AM">Amazonas</option>
+              <option value="BA">Bahia</option>
+              <option value="CE">Ceará</option>
+              <option value="DF">Distrito Federal</option>
+              <option value="ES">Espírito Santo</option>
+              <option value="GO">Goiás</option>
+              <option value="MA">Maranhão</option>
+              <option value="MT">Mato Grosso</option>
+              <option value="MS">Mato Grosso do Sul</option>
+              <option value="MG">Minas Gerais</option>
+              <option value="PA">Pará</option>
+              <option value="PB">Paraíba</option>
+              <option value="PR">Paraná</option>
+              <option value="PE">Pernambuco</option>
+              <option value="PI">Piauí</option>
+              <option value="RJ">Rio de Janeiro</option>
+              <option value="RN">Rio Grande do Norte</option>
+              <option value="RS">Rio Grande do Sul</option>
+              <option value="RO">Rondônia</option>
+              <option value="RR">Roraima</option>
+              <option value="SC">Santa Catarina</option>
+              <option value="SP">São Paulo</option>
+              <option value="SE">Sergipe</option>
+              <option value="TO">Tocantins</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn-small btn-edit" onclick="closeAddressModal()" style="flex: 1;">Cancelar</button>
+          <button type="submit" class="btn-save" style="flex: 1;">Salvar Endereço</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication
+    if (sessionStorage.getItem('fanjoy_customer_logged') !== 'true') {
+      window.location.href = 'customer-login.html';
+    }
+
+    const customerId = parseInt(sessionStorage.getItem('fanjoy_customer_id'));
+    let customer = null;
+    let editingAddressId = null;
+
+    // Load customer data
+    function loadCustomerData() {
+      const customers = JSON.parse(localStorage.getItem('fanjoy_customers')) || [];
+      customer = customers.find(c => c.id === customerId);
+      
+      if (!customer) {
+        logout();
+        return;
+      }
+
+      // Set name in header
+      document.getElementById('customerName').textContent = customer.name;
+
+      // Fill profile form
+      document.getElementById('profileName').value = customer.name;
+      document.getElementById('profileLastName').value = customer.lastName;
+      document.getElementById('profileEmail').value = customer.email;
+      document.getElementById('profilePhone').value = customer.phone;
+
+      // Render addresses and orders
+      renderAddresses();
+      renderOrders();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      
+      if (tab === 'profile') {
+        document.getElementById('profileTab').classList.add('active');
+      } else if (tab === 'addresses') {
+        document.getElementById('addressesTab').classList.add('active');
+      } else if (tab === 'orders') {
+        document.getElementById('ordersTab').classList.add('active');
+      }
+    }
+
+    function saveProfile(e) {
+      e.preventDefault();
+      
+      customer.name = document.getElementById('profileName').value;
+      customer.lastName = document.getElementById('profileLastName').value;
+      customer.fullName = `${customer.name} ${customer.lastName}`;
+      customer.email = document.getElementById('profileEmail').value;
+      customer.phone = document.getElementById('profilePhone').value;
+      
+      updateCustomer();
+      showSuccessMessage();
+    }
+
+    function renderAddresses() {
+      const list = document.getElementById('addressesList');
+      
+      if (!customer.addresses || customer.addresses.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📍</div>
+            <h3>Nenhum endereço cadastrado</h3>
+            <p>Adicione um endereço para facilitar suas compras</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = customer.addresses.map(addr => `
+        <div class="address-card">
+          <h3>${addr.label}</h3>
+          <p><strong>CEP:</strong> ${addr.cep}</p>
+          <p>${addr.street}, ${addr.number}${addr.complement ? ' - ' + addr.complement : ''}</p>
+          <p>${addr.neighborhood}, ${addr.city} - ${addr.state}</p>
+          <div class="address-actions">
+            <button class="btn-small btn-edit" onclick="editAddress(${addr.id})">Editar</button>
+            <button class="btn-small btn-delete" onclick="deleteAddress(${addr.id})">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderOrders() {
+      const list = document.getElementById('ordersList');
+      
+      if (!customer.orders || customer.orders.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <h3>Nenhum pedido realizado</h3>
+            <p>Você ainda não fez nenhuma compra</p>
+            <a href="index.html" class="btn-save" style="margin-top: 16px; display: inline-block;">Ir para a Loja</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort orders by date (newest first)
+      const sortedOrders = [...customer.orders].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+      );
+
+      list.innerHTML = sortedOrders.map(order => `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <div class="order-id">Pedido #${order.id}</div>
+              <div class="order-date">${new Date(order.date).toLocaleDateString('pt-BR', { 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+              })}</div>
+            </div>
+            <div class="order-status status-${order.status}">
+              ${getStatusLabel(order.status)}
+            </div>
+          </div>
+          <div class="order-items">
+            ${order.items.map(item => `
+              <div class="order-item">
+                <img src="${item.image}" alt="${item.name}" class="order-item-image">
+                <div class="order-item-info">
+                  <div class="order-item-name">${item.name}</div>
+                  <div class="order-item-details">Quantidade: ${item.quantity} • R$ ${item.price.toFixed(2)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="order-total">Total: R$ ${order.total.toFixed(2)}</div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusLabel(status) {
+      const labels = {
+        pending: 'Pendente',
+        confirmed: 'Confirmado',
+        shipped: 'Enviado',
+        delivered: 'Entregue',
+        cancelled: 'Cancelado'
+      };
+      return labels[status] || status;
+    }
+
+    function openAddressModal(addressId = null) {
+      editingAddressId = addressId;
+      const modal = document.getElementById('addressModal');
+      const form = document.getElementById('addressForm');
+      form.reset();
+      
+      if (addressId) {
+        const address = customer.addresses.find(a => a.id === addressId);
+        if (address) {
+          document.getElementById('addressModalTitle').textContent = 'Editar Endereço';
+          document.getElementById('addressId').value = address.id;
+          document.getElementById('addressLabel').value = address.label;
+          document.getElementById('addressCEP').value = address.cep;
+          document.getElementById('addressStreet').value = address.street;
+          document.getElementById('addressNumber').value = address.number;
+          document.getElementById('addressComplement').value = address.complement || '';
+          document.getElementById('addressNeighborhood').value = address.neighborhood;
+          document.getElementById('addressCity').value = address.city;
+          document.getElementById('addressState').value = address.state;
+        }
+      } else {
+        document.getElementById('addressModalTitle').textContent = 'Adicionar Endereço';
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closeAddressModal() {
+      document.getElementById('addressModal').classList.remove('active');
+      editingAddressId = null;
+    }
+
+    function saveAddress(e) {
+      e.preventDefault();
+      
+      const address = {
+        id: editingAddressId || Date.now(),
+        label: document.getElementById('addressLabel').value,
+        cep: document.getElementById('addressCEP').value,
+        street: document.getElementById('addressStreet').value,
+        number: document.getElementById('addressNumber').value,
+        complement: document.getElementById('addressComplement').value,
+        neighborhood: document.getElementById('addressNeighborhood').value,
+        city: document.getElementById('addressCity').value,
+        state: document.getElementById('addressState').value
+      };
+
+      if (!customer.addresses) {
+        customer.addresses = [];
+      }
+
+      if (editingAddressId) {
+        const index = customer.addresses.findIndex(a => a.id === editingAddressId);
+        customer.addresses[index] = address;
+      } else {
+        customer.addresses.push(address);
+      }
+
+      updateCustomer();
+      closeAddressModal();
+      renderAddresses();
+      showSuccessMessage();
+    }
+
+    function editAddress(id) {
+      openAddressModal(id);
+    }
+
+    function deleteAddress(id) {
+      if (confirm('Tem certeza que deseja excluir este endereço?')) {
+        customer.addresses = customer.addresses.filter(a => a.id !== id);
+        updateCustomer();
+        renderAddresses();
+        showSuccessMessage();
+      }
+    }
+
+    function updateCustomer() {
+      const customers = JSON.parse(localStorage.getItem('fanjoy_customers')) || [];
+      const index = customers.findIndex(c => c.id === customerId);
+      if (index !== -1) {
+        customers[index] = customer;
+        localStorage.setItem('fanjoy_customers', JSON.stringify(customers));
+      }
+    }
+
+    function showSuccessMessage() {
+      const msg = document.getElementById('successMessage');
+      msg.classList.add('show');
+      setTimeout(() => {
+        msg.classList.remove('show');
+      }, 3000);
+    }
+
+    function logout() {
+      sessionStorage.removeItem('fanjoy_customer_logged');
+      sessionStorage.removeItem('fanjoy_customer_id');
+      sessionStorage.removeItem('fanjoy_customer_name');
+      window.location.href = 'customer-login.html';
+    }
+
+    // CEP mask
+    document.getElementById('addressCEP')?.addEventListener('input', (e) => {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length <= 8) {
+        value = value.replace(/^(\d{5})(\d)/, '$1-$2');
+        e.target.value = value;
+      }
+    });
+
+    // Close modal on outside click
+    document.getElementById('addressModal').addEventListener('click', (e) => {
+      if (e.target.id === 'addressModal') {
+        closeAddressModal();
+      }
+    });
+
+    // Initialize
+    loadCustomerData();
+  </script>
+
+  <!-- API Integration -->
+  <script src="js/api.js"></script>
+  <script src="js/profile-integration.js"></script>
+</body>
+</html>
