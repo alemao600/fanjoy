@@ -1330,21 +1330,6 @@
           alert('❌ Erro ao adicionar ao carrinho');
         }
       }
-    }      }
-
-      localStorage.setItem('fanjoy_cart', JSON.stringify(cart));
-      updateCartCount();
-
-      // Show feedback
-      const btn = event.target;
-      const originalText = btn.textContent;
-      btn.textContent = '✓ Adicionado!';
-      btn.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
-      
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.background = '';
-      }, 1500);
     }
 
     function handleLoginClick() {
