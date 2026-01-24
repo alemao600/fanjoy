@@ -2,8 +2,9 @@
 // INDEX.HTML - Integração com API
 // ========================================
 
-let allProducts = [];
-let filteredProducts = [];
+// Variáveis globais (acessíveis por index.html)
+window.allProducts = [];
+window.filteredProducts = [];
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
@@ -47,20 +48,20 @@ async function loadProducts() {
   try {
     const response = await FanjoyAPI.Products.getAll();
     if (response.success) {
-      allProducts = response.data.products || [];
-      filteredProducts = [...allProducts];
+      window.allProducts = response.data.products || [];
+      window.filteredProducts = [...window.allProducts];
       renderProducts();
     } else {
       console.warn('Nenhum produto encontrado, usando produtos padrão');
-      allProducts = getDefaultProducts();
-      filteredProducts = [...allProducts];
+      window.allProducts = getDefaultProducts();
+      window.filteredProducts = [...window.allProducts];
       renderProducts();
     }
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
     // Fallback para produtos padrão
-    allProducts = getDefaultProducts();
-    filteredProducts = [...allProducts];
+    window.allProducts = getDefaultProducts();
+    window.filteredProducts = [...window.allProducts];
     renderProducts();
   }
 }
@@ -109,7 +110,7 @@ function renderProducts() {
   const productsGrid = document.getElementById('productsGrid');
   if (!productsGrid) return;
 
-  if (filteredProducts.length === 0) {
+  if (window.filteredProducts.length === 0) {
     productsGrid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--muted);">
         <h3>Nenhum produto encontrado</h3>
@@ -119,7 +120,7 @@ function renderProducts() {
     return;
   }
 
-  productsGrid.innerHTML = filteredProducts.map(product => `
+  productsGrid.innerHTML = window.filteredProducts.map(product => `
     <div class="product-card" data-product-id="${product._id || product.id}">
       <div class="product-image">
         <img src="${product.images && product.images[0] ? product.images[0] : 'https://via.placeholder.com/400'}" alt="${product.name}">
@@ -214,7 +215,7 @@ function applyFilters() {
   const minPrice = parseFloat(document.getElementById('minPrice')?.value || 0);
   const maxPrice = parseFloat(document.getElementById('maxPrice')?.value || 10000);
   
-  filteredProducts = allProducts.filter(product => {
+  window.filteredProducts = window.allProducts.filter(product => {
     // Filtro de busca
     const matchesSearch = !searchTerm || 
       product.name.toLowerCase().includes(searchTerm) ||
