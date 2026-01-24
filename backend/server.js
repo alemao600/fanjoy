@@ -8,46 +8,30 @@ require('dotenv').config();
 
 const app = express();
 
-// Security Middleware
-app.use(helmet());
-
-// CORS Configuration - Permitir Vercel, localhost e qualquer preview
+// CORS Configuration - Deve ser PRIMEIRO middleware
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8000',
+  'https://fanjoy-orcin.vercel.app',
   process.env.FRONTEND_URL || 'http://localhost:3000'
 ];
 
+// CORS ANTES de tudo
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir requests sem origin (como mobile apps ou curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Verificar se é um domínio permitido
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Permitir QUALQUER *.vercel.app (inclui todos os previews e production)
-    if (origin && origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-    
-    // Permitir localhost em qualquer porta
-    if (origin && origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
-    
-    // Bloquear outras origens
-    callback(new Error('CORS not allowed'));
-  },
+  origin: true, // Permitir qualquer origem temporariamente para debug
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200
 }));
 
-// Rate limiting
+// Preflight requests
+app.options('*', cors());
+
+// Security Middleware (DEPOIS do CORS)
+app.use(helmet());
+
+// Rate limiting (DEPOIS do CORS)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100 // limite de 100 requisições por IP
