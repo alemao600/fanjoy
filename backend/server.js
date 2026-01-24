@@ -93,6 +93,104 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Initialize Database (Endpoint seguro com senha)
+app.post('/api/init-db', async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    // Senha de segurança
+    if (password !== 'admin123456') {
+      return res.status(401).json({ success: false, message: 'Senha incorreta' });
+    }
+
+    const Admin = require('./models/Admin');
+    const Customer = require('./models/Customer');
+    const Product = require('./models/Product');
+    const Category = require('./models/Category');
+
+    // Limpar dados existentes
+    await Admin.deleteMany({});
+    await Customer.deleteMany({});
+    await Product.deleteMany({});
+    await Category.deleteMany({});
+    console.log('🗑️  Dados antigos removidos');
+
+    // Criar categorias
+    const categories = await Category.create([
+      { name: 'Camiseta', description: 'Camisetas premium de K-pop e doramas' },
+      { name: 'Caneca', description: 'Canecas personalizadas' },
+      { name: 'Photocard', description: 'Photocards exclusivas' },
+      { name: 'Moletom', description: 'Moletons confortáveis' },
+      { name: 'Acessório', description: 'Acessórios diversos' }
+    ]);
+
+    // Criar admin
+    await Admin.create({
+      username: 'admin',
+      email: 'admin@fanjoy.com',
+      password: 'Admin@123456',
+      role: 'super_admin'
+    });
+
+    // Criar produtos (incluindo teste de R$ 2)
+    await Product.create([
+      {
+        name: '🧪 Teste R$ 2 (Clique aqui)',
+        description: 'Produto de teste para checkout - Clique em Comprar para testar o Mercado Pago',
+        price: 2,
+        images: ['https://images.unsplash.com/photo-1516321318423-f06f70504504?auto=format&fit=crop&w=600&q=80'],
+        categories: [categories[0]._id],
+        tag: 'TESTE',
+        buttonText: 'Comprar',
+        stock: 1000
+      },
+      {
+        name: 'Camiseta Oversize',
+        description: 'Algodão premium 280g, print neon high quality',
+        price: 149,
+        images: ['https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80'],
+        categories: [categories[0]._id],
+        tag: 'Novo',
+        buttonText: 'Comprar',
+        stock: 50
+      },
+      {
+        name: 'Caneca Holográfica',
+        description: 'Acabamento holo, interior colorido + brinde',
+        price: 69,
+        images: ['https://images.unsplash.com/photo-1523365280197-f21d6cfc1c67?auto=format&fit=crop&w=600&q=80'],
+        categories: [categories[1]._id],
+        tag: 'Hot',
+        buttonText: 'Comprar',
+        stock: 100
+      }
+    ]);
+
+    // Criar cliente de teste
+    await Customer.create({
+      name: 'João',
+      lastName: 'Silva',
+      email: 'cliente@teste.com',
+      password: 'teste123',
+      phone: '(11) 98765-4321'
+    });
+
+    res.json({
+      success: true,
+      message: '✅ Banco de dados inicializado com sucesso!',
+      data: {
+        categoriesCreated: 5,
+        productsCreated: 3,
+        adminCreated: true,
+        customerCreated: true
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao inicializar:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ 
