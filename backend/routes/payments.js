@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const { protectCustomer } = require('../middleware/auth');
 const Order = require('../models/Order');
 
-// Configurar Mercado Pago
-mercadopago.configure({
-  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN
+// Configurar Mercado Pago (SDK v2.x)
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+  options: { timeout: 20000 }
 });
 
 // @route   POST /api/payments/create-preference
@@ -59,14 +60,14 @@ router.post('/create-preference', protectCustomer, async (req, res) => {
     }
 
     // Criar preferência de pagamento
-    const preference = {
+    const preferenceRequest = {
       items: items,
       payer: {
         name: req.customer.name,
-        surname: req.customer.lastName,
+        surname: req.customer.lastName || '',
         email: req.customer.email,
         phone: {
-          number: req.customer.phone.replace(/\D/g, '')
+          number: req.customer.phone ? req.customer.phone.replace(/\D/g, '') : '1199999999'
         },
         address: {
           zip_code: order.shippingAddress.cep.replace(/\D/g, ''),
@@ -90,14 +91,15 @@ router.post('/create-preference', protectCustomer, async (req, res) => {
       }
     };
 
-    const response = await mercadopago.preferences.create(preference);
+    const preference = new Preference(client);
+    const response = await preference.create({ body: preferenceRequest });
 
     res.json({
       success: true,
       data: {
-        preferenceId: response.body.id,
-        initPoint: response.body.init_point,
-        sandboxInitPoint: response.body.sandbox_init_point
+        preferenceId: response.id,
+        initPoint: response.init_point,
+        sandboxInitPoint: response.sandbox_init_point
       }
     });
   } catch (error) {
@@ -122,9 +124,10 @@ router.post('/webhook', async (req, res) => {
       const paymentId = data.id;
 
       // Buscar informações do pagamento
-      const payment = await mercadopago.payment.get(paymentId);
-      const orderId = payment.body.external_reference;
-      const status = payment.body.status;
+      const payment = new Payment(client);
+      const paymentResponse = await payment.get({ id: paymentId });
+      const orderId = paymentResponse.external_reference;
+      const status = paymentResponse.status;
 
       // Atualizar pedido
       const order = await Order.findById(orderId);
