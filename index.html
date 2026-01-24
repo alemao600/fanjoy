@@ -1259,10 +1259,6 @@
   </style>
 
   <script>
-    // Load products from localStorage
-    let allProducts = [];
-    let filteredProducts = [];
-
     // Check if customer is logged in
     function checkCustomerLogin() {
       const isLogged = sessionStorage.getItem('fanjoy_customer_logged') === 'true';
@@ -1292,23 +1288,49 @@
     }
 
     function addToCart(productId) {
-      const product = allProducts.find(p => p.id === productId);
-      if (!product) return;
+      try {
+        const allProducts = window.allProducts || [];
+        const product = allProducts.find(p => p.id === productId || p._id === productId);
+        if (!product) {
+          console.error('Produto não encontrado:', productId);
+          return;
+        }
 
-      let cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
-      const existingItem = cart.find(item => item.id === productId);
+        let cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
+        const existingItem = cart.find(item => item.id === productId || item.id === product._id);
 
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        cart.push({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.images ? product.images[0] : product.image,
-          quantity: 1
-        });
+        if (existingItem) {
+          existingItem.quantity += 1;
+        } else {
+          cart.push({
+            id: product._id || product.id,
+            name: product.name,
+            price: product.price,
+            image: product.images ? product.images[0] : product.image,
+            quantity: 1
+          });
+        }
+        
+        // Limitar tamanho do localStorage
+        if (JSON.stringify(cart).length > 5000000) { // 5MB limit
+          console.warn('⚠️ Carrinho muito grande, limpando...');
+          cart = cart.slice(-10); // Manter apenas últimos 10 itens
+        }
+        
+        localStorage.setItem('fanjoy_cart', JSON.stringify(cart));
+        updateCartCount();
+        alert('✅ Produto adicionado ao carrinho!');
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          console.error('❌ localStorage cheio, limpando dados antigos...');
+          localStorage.removeItem('fanjoy_cart');
+          alert('⚠️ Carrinho foi limpo. Tente adicionar novamente.');
+        } else {
+          console.error('Erro ao adicionar ao carrinho:', e);
+          alert('❌ Erro ao adicionar ao carrinho');
+        }
       }
+    }      }
 
       localStorage.setItem('fanjoy_cart', JSON.stringify(cart));
       updateCartCount();
