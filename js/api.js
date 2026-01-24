@@ -4,8 +4,7 @@
 
 const API_CONFIG = {
   // URL da API (ajuste conforme seu ambiente)
-  baseURL: 'http://localhost:5000/api',
-  // Produção: baseURL: 'https://sua-api.railway.app/api',
+  baseURL: 'https://fanjoy.onrender.com/api',
   
   timeout: 10000
 };
