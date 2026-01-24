@@ -11,26 +11,40 @@ const app = express();
 // Security Middleware
 app.use(helmet());
 
-// CORS Configuration - Permitir Vercel e localhost
+// CORS Configuration - Permitir Vercel, localhost e qualquer preview
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:8000',
-  'https://fanjoy-orcin.vercel.app',
-  'https://fanjoy.vercel.app',
   process.env.FRONTEND_URL || 'http://localhost:3000'
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Permitir requests sem origin (como mobile apps ou curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Verificar se é um domínio permitido
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+    
+    // Permitir QUALQUER *.vercel.app (inclui todos os previews e production)
+    if (origin && origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Permitir localhost em qualquer porta
+    if (origin && origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    // Bloquear outras origens
+    callback(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
 
 // Rate limiting
