@@ -145,7 +145,7 @@ function renderProducts() {
 // ========================================
 
 async function addToCart(productId) {
-  const product = allProducts.find(p => (p._id || p.id) === productId);
+  const product = window.allProducts.find(p => (p._id || p.id) === productId);
   if (!product) {
     alert('Produto não encontrado');
     return;

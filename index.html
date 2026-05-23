@@ -1259,6 +1259,62 @@
   </style>
 
   <script>
+    function applyAdminSettings() {
+      const siteCfg = JSON.parse(localStorage.getItem('fanjoy_site_content') || '{}');
+      const themeCfg = JSON.parse(localStorage.getItem('fanjoy_site_theme') || '{}');
+
+      if (themeCfg.accent) document.documentElement.style.setProperty('--accent', themeCfg.accent);
+      if (themeCfg.accent2) document.documentElement.style.setProperty('--accent2', themeCfg.accent2);
+      if (themeCfg.accent3) document.documentElement.style.setProperty('--accent3', themeCfg.accent3);
+      if (themeCfg.bg) document.documentElement.style.setProperty('--bg', themeCfg.bg);
+      if (themeCfg.text) document.documentElement.style.setProperty('--text', themeCfg.text);
+
+      if (siteCfg.siteName) {
+        document.title = `${siteCfg.siteName} - Fanmade Store`;
+      }
+
+      const logo = document.querySelector('.logo');
+      if (logo && siteCfg.siteName) {
+        const logoImg = siteCfg.logoUrl || 'logo.png';
+        logo.innerHTML = `<img src="${logoImg}" alt="${siteCfg.siteName}">${siteCfg.siteName}`;
+      }
+
+      const heroTitle = document.querySelector('.hero-content h1');
+      if (heroTitle && siteCfg.heroTitle) {
+        const safe = siteCfg.heroTitle
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join('<br>');
+        heroTitle.innerHTML = safe;
+      }
+
+      const heroSubtitle = document.querySelector('.hero-subtitle');
+      if (heroSubtitle && siteCfg.heroSubtitle) {
+        heroSubtitle.textContent = siteCfg.heroSubtitle;
+      }
+
+      const ctaTitle = document.querySelector('.cta-box h2');
+      if (ctaTitle && siteCfg.ctaTitle) {
+        ctaTitle.textContent = siteCfg.ctaTitle;
+      }
+
+      const ctaText = document.querySelector('.cta-box p');
+      if (ctaText && siteCfg.ctaText) {
+        ctaText.textContent = siteCfg.ctaText;
+      }
+
+      const ctaBtn = document.querySelector('.cta-box .btn.primary');
+      if (ctaBtn && siteCfg.ctaBtn) {
+        ctaBtn.textContent = siteCfg.ctaBtn;
+      }
+
+      const footerText = document.querySelector('footer p');
+      if (footerText && siteCfg.footerText) {
+        footerText.textContent = siteCfg.footerText;
+      }
+    }
+
     // Check if customer is logged in
     function checkCustomerLogin() {
       const isLogged = sessionStorage.getItem('fanjoy_customer_logged') === 'true';
@@ -1504,7 +1560,7 @@
       const maxPrice = parseFloat(document.getElementById('maxPrice')?.value) || 500;
 
       // Filter products
-      filteredProducts = allProducts.filter(product => {
+      filteredProducts = window.allProducts.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(searchTerm) || 
                             product.description.toLowerCase().includes(searchTerm);
         
@@ -1677,6 +1733,7 @@
 
     // Initialize products on page load
     document.addEventListener('DOMContentLoaded', () => {
+      applyAdminSettings();
       // Check customer login status
       checkCustomerLogin();
       
@@ -1738,7 +1795,8 @@
   </script>
 
   <!-- API Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/index-integration.js"></script>
 </body>
 </html>

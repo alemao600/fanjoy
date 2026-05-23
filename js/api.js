@@ -1,393 +1,723 @@
-// ========================================
-// Configuração da API Backend
-// ========================================
-
-const API_CONFIG = {
-  // URL da API (ajuste conforme seu ambiente)
-  baseURL: 'https://fanjoy.onrender.com/api',
-  
-  timeout: 10000
-};
-
-// Chave pública do Mercado Pago
-const MERCADOPAGO_PUBLIC_KEY = 'APP_USR-0d2705f9-ecee-40bf-a784-afcbae749106';
-
-// ========================================
-// Funções de Autenticação
+﻿// ========================================
+// Fanjoy API - Supabase (Frontend Only)
 // ========================================
 
-function getAuthToken() {
-  return localStorage.getItem('fanjoy_token');
-}
+(function initFanjoyApi() {
+  const SUPABASE_URL = window.FANJOY_SUPABASE_URL || "";
+  const SUPABASE_ANON_KEY = window.FANJOY_SUPABASE_ANON_KEY || "";
 
-function setAuthToken(token) {
-  localStorage.setItem('fanjoy_token', token);
-}
+  if (!window.supabase || !window.supabase.createClient) {
+    console.error("Supabase SDK não carregado. Verifique o script CDN.");
+    return;
+  }
 
-function clearAuthToken() {
-  localStorage.removeItem('fanjoy_token');
-  sessionStorage.clear();
-}
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error("Supabase não configurado. Defina FANJOY_SUPABASE_URL e FANJOY_SUPABASE_ANON_KEY em js/supabase-config.js");
+  }
 
-function isAuthenticated() {
-  return !!getAuthToken();
-}
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: "fanjoy_supabase_auth"
+    }
+  });
 
-// ========================================
-// Funções de API
-// ========================================
+  function ok(data, message) {
+    return { success: true, data: data || {}, message: message || null };
+  }
 
-async function apiRequest(endpoint, options = {}) {
-  try {
-    const token = getAuthToken();
-    
-    const config = {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers
-      },
-      ...(options.body && { body: JSON.stringify(options.body) })
-    };
+  function fail(message) {
+    return { success: false, message: message || "Erro inesperado" };
+  }
 
-    const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, config);
-    const data = await response.json();
+  async function getSessionUser() {
+    const { data, error } = await sb.auth.getUser();
+    if (error) return null;
+    return data?.user || null;
+  }
 
-    if (!response.ok) {
-      // Se token inválido, fazer logout
-      if (response.status === 401) {
-        clearAuthToken();
-        window.location.href = 'customer-login.html';
-      }
-      throw new Error(data.message || 'Erro na requisição');
+  async function getCustomerProfileByUserId(userId) {
+    const { data, error } = await sb
+      .from("customers")
+      .select("id, user_id, name, last_name, email, phone, cpf")
+      .eq("user_id", userId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
     }
 
     return data;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
   }
-}
 
-// ========================================
-// API de Autenticação
-// ========================================
+  async function getCustomerAddresses(customerId) {
+    const { data, error } = await sb
+      .from("customer_addresses")
+      .select("id, label, cep, street, number, complement, neighborhood, city, state, is_default")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: true });
 
-const AuthAPI = {
-  async register(userData) {
-    return await apiRequest('/auth/register', {
-      method: 'POST',
-      body: userData
-    });
-  },
+    if (error) throw error;
+    return data || [];
+  }
 
-  async login(credentials) {
-    const response = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: credentials
-    });
-    
-    if (response.success && response.data.token) {
-      setAuthToken(response.data.token);
+  async function buildCustomerPayload(user) {
+    const profile = await getCustomerProfileByUserId(user.id);
+    if (!profile) return null;
+
+    const addresses = await getCustomerAddresses(profile.id);
+
+    return {
+      _id: profile.id,
+      id: profile.id,
+      userId: profile.user_id,
+      name: profile.name,
+      lastName: profile.last_name,
+      email: profile.email,
+      phone: profile.phone,
+      cpf: profile.cpf,
+      addresses: addresses.map((a) => ({
+        _id: a.id,
+        id: a.id,
+        label: a.label,
+        cep: a.cep,
+        street: a.street,
+        number: a.number,
+        complement: a.complement,
+        neighborhood: a.neighborhood,
+        city: a.city,
+        state: a.state,
+        isDefault: a.is_default
+      }))
+    };
+  }
+
+  // ========================================
+  // Auth
+  // ========================================
+
+  const AuthAPI = {
+    async register(userData) {
+      try {
+        const payload = {
+          email: userData.email,
+          password: userData.password,
+          options: {
+            data: {
+              name: userData.name,
+              last_name: userData.lastName || "",
+              phone: userData.phone || ""
+            }
+          }
+        };
+
+        const { data, error } = await sb.auth.signUp(payload);
+        if (error) return fail(error.message);
+
+        if (data.user) {
+          const upsertPayload = {
+            user_id: data.user.id,
+            name: userData.name,
+            last_name: userData.lastName || "",
+            email: userData.email,
+            phone: userData.phone || "",
+            cpf: userData.cpf || null
+          };
+
+          const { error: upsertError } = await sb
+            .from("customers")
+            .upsert(upsertPayload, { onConflict: "user_id" });
+
+          if (upsertError) return fail(upsertError.message);
+        }
+
+        return ok({ user: data.user }, "Conta criada com sucesso");
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async login(credentials) {
+      try {
+        const { data, error } = await sb.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password
+        });
+
+        if (error) return fail(error.message);
+
+        const customer = await buildCustomerPayload(data.user);
+        if (!customer) return fail("Perfil do cliente não encontrado");
+
+        sessionStorage.setItem("fanjoy_customer_logged", "true");
+        sessionStorage.setItem("fanjoy_customer_id", customer._id);
+        sessionStorage.setItem("fanjoy_customer_name", customer.name || "Cliente");
+
+        return ok({ token: data.session?.access_token || "supabase-session", customer });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async adminLogin(credentials) {
+      return fail("Login admin é local na página login.html");
+    },
+
+    async logout() {
+      await sb.auth.signOut();
+      sessionStorage.removeItem("fanjoy_customer_logged");
+      sessionStorage.removeItem("fanjoy_customer_id");
+      sessionStorage.removeItem("fanjoy_customer_name");
+      localStorage.removeItem("fanjoy_token");
+      window.location.href = "index.html";
+    },
+
+    isAuthenticated() {
+      return sessionStorage.getItem("fanjoy_customer_logged") === "true";
     }
-    
-    return response;
-  },
+  };
 
-  async adminLogin(credentials) {
-    const response = await apiRequest('/auth/admin/login', {
-      method: 'POST',
-      body: credentials
-    });
-    
-    if (response.success && response.data.token) {
-      setAuthToken(response.data.token);
+  // ========================================
+  // Products
+  // ========================================
+
+  function mapProduct(row) {
+    return {
+      _id: row.id,
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      price: Number(row.price || 0),
+      images: row.images && row.images.length ? row.images : [row.image_url || ""],
+      image: row.image_url || (row.images && row.images[0]) || "",
+      tag: row.tag,
+      buttonText: row.button_text || "Comprar",
+      stock: row.stock || 0,
+      categories: (row.product_categories || []).map((pc) => ({
+        id: pc.categories?.id,
+        name: pc.categories?.name,
+        slug: pc.categories?.slug
+      })).filter((c) => c.name)
+    };
+  }
+
+  async function syncProductCategories(productId, categoryNames) {
+    const cleanNames = Array.from(new Set((categoryNames || []).map((n) => String(n || "").trim()).filter(Boolean)));
+
+    const { error: deleteError } = await sb.from("product_categories").delete().eq("product_id", productId);
+    if (deleteError) throw deleteError;
+
+    if (!cleanNames.length) return;
+
+    const links = [];
+    for (const name of cleanNames) {
+      const slug = name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      const { data: cat, error: catError } = await sb
+        .from("categories")
+        .upsert({ name, slug }, { onConflict: "slug" })
+        .select("id")
+        .single();
+
+      if (catError) throw catError;
+      links.push({ product_id: productId, category_id: cat.id });
     }
-    
-    return response;
-  },
 
-  logout() {
-    clearAuthToken();
-    window.location.href = 'index.html';
+    if (links.length) {
+      const { error: linkError } = await sb.from("product_categories").insert(links);
+      if (linkError) throw linkError;
+    }
   }
-};
 
-// ========================================
-// API de Produtos
-// ========================================
+  const ProductsAPI = {
+    async getAll() {
+      try {
+        const { data, error } = await sb
+          .from("products")
+          .select("id, name, description, price, image_url, images, tag, button_text, stock, product_categories(categories(id, name, slug))")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
 
-const ProductsAPI = {
-  async getAll(filters = {}) {
-    const params = new URLSearchParams(filters);
-    return await apiRequest(`/products?${params}`);
-  },
+        if (error) return fail(error.message);
+        return ok({ products: (data || []).map(mapProduct) });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
 
-  async getById(id) {
-    return await apiRequest(`/products/${id}`);
-  },
+    async getById(id) {
+      try {
+        const { data, error } = await sb
+          .from("products")
+          .select("id, name, description, price, image_url, images, tag, button_text, stock, product_categories(categories(id, name, slug))")
+          .eq("id", id)
+          .single();
+        if (error) return fail(error.message);
+        return ok(mapProduct(data));
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
 
-  async create(productData) {
-    return await apiRequest('/admin/products', {
-      method: 'POST',
-      body: productData
+    async create(productData) {
+      try {
+        const { data, error } = await sb
+          .from("products")
+          .insert({
+            name: productData.name,
+            description: productData.description,
+            price: productData.price,
+            image_url: productData.image || (productData.images || [])[0] || null,
+            images: productData.images || (productData.image ? [productData.image] : []),
+            tag: productData.tag || null,
+            button_text: productData.buttonText || "Comprar",
+            stock: productData.stock || 0,
+            is_active: true
+          })
+          .select()
+          .single();
+        if (error) return fail(error.message);
+        await syncProductCategories(data.id, productData.categories || []);
+        return ok(data);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async update(id, productData) {
+      try {
+        const { data, error } = await sb
+          .from("products")
+          .update({
+            name: productData.name,
+            description: productData.description,
+            price: productData.price,
+            image_url: productData.image || (productData.images || [])[0] || null,
+            images: productData.images || (productData.image ? [productData.image] : []),
+            tag: productData.tag || null,
+            button_text: productData.buttonText || "Comprar",
+            stock: productData.stock || 0
+          })
+          .eq("id", id)
+          .select()
+          .single();
+        if (error) return fail(error.message);
+        await syncProductCategories(id, productData.categories || []);
+        return ok(data);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async delete(id) {
+      try {
+        const { error } = await sb.from("products").delete().eq("id", id);
+        if (error) return fail(error.message);
+        return ok({ deleted: true });
+      } catch (err) {
+        return fail(err.message);
+      }
+    }
+  };
+
+  // ========================================
+  // Categories
+  // ========================================
+
+  const CategoriesAPI = {
+    async getAll() {
+      try {
+        const { data, error } = await sb.from("categories").select("id, name, slug").order("name");
+        if (error) return fail(error.message);
+        return ok(data || []);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async create(categoryData) {
+      try {
+        const raw = categoryData.name || "";
+        const slug = raw.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        const { data, error } = await sb.from("categories").insert({ name: raw, slug }).select().single();
+        if (error) return fail(error.message);
+        return ok(data);
+      } catch (err) {
+        return fail(err.message);
+      }
+    }
+  };
+
+  // ========================================
+  // Customers
+  // ========================================
+
+  const CustomersAPI = {
+    async getProfile() {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await buildCustomerPayload(user);
+        if (!customer) return fail("Perfil não encontrado");
+
+        return ok(customer);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async updateProfile(profileData) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const { error } = await sb
+          .from("customers")
+          .update({
+            name: profileData.name,
+            last_name: profileData.lastName,
+            email: profileData.email,
+            phone: profileData.phone,
+            cpf: profileData.cpf || null
+          })
+          .eq("user_id", user.id);
+
+        if (error) return fail(error.message);
+
+        const customer = await buildCustomerPayload(user);
+        return ok(customer);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async addAddress(addressData) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        if (addressData.isDefault) {
+          await sb.from("customer_addresses").update({ is_default: false }).eq("customer_id", customer.id);
+        }
+
+        const { error } = await sb.from("customer_addresses").insert({
+          customer_id: customer.id,
+          label: addressData.label || "Endereço",
+          cep: addressData.cep,
+          street: addressData.street,
+          number: addressData.number,
+          complement: addressData.complement || null,
+          neighborhood: addressData.neighborhood,
+          city: addressData.city,
+          state: addressData.state,
+          is_default: !!addressData.isDefault
+        });
+
+        if (error) return fail(error.message);
+        const updated = await buildCustomerPayload(user);
+        return ok(updated);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async updateAddress(addressId, addressData) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        if (addressData.isDefault) {
+          await sb.from("customer_addresses").update({ is_default: false }).eq("customer_id", customer.id);
+        }
+
+        const { error } = await sb
+          .from("customer_addresses")
+          .update({
+            label: addressData.label || "Endereço",
+            cep: addressData.cep,
+            street: addressData.street,
+            number: addressData.number,
+            complement: addressData.complement || null,
+            neighborhood: addressData.neighborhood,
+            city: addressData.city,
+            state: addressData.state,
+            is_default: !!addressData.isDefault
+          })
+          .eq("id", addressId)
+          .eq("customer_id", customer.id);
+
+        if (error) return fail(error.message);
+        const updated = await buildCustomerPayload(user);
+        return ok(updated);
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async deleteAddress(addressId) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        const { error } = await sb
+          .from("customer_addresses")
+          .delete()
+          .eq("id", addressId)
+          .eq("customer_id", customer.id);
+
+        if (error) return fail(error.message);
+        const updated = await buildCustomerPayload(user);
+        return ok(updated);
+      } catch (err) {
+        return fail(err.message);
+      }
+    }
+  };
+
+  // ========================================
+  // Orders
+  // ========================================
+
+  async function getOrderItemsWithProducts(orderId) {
+    const { data, error } = await sb
+      .from("order_items")
+      .select("id, quantity, price, product_id, products(name)")
+      .eq("order_id", orderId);
+
+    if (error) throw error;
+
+    return (data || []).map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      price: Number(item.price || 0),
+      product: {
+        id: item.product_id,
+        name: item.products?.name || "Produto"
+      }
+    }));
+  }
+
+  const OrdersAPI = {
+    async create(orderData) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        const now = Date.now().toString().slice(-8);
+
+        const { data: order, error: orderError } = await sb
+          .from("orders")
+          .insert({
+            customer_id: customer.id,
+            order_number: "FAJ-" + now,
+            status: "pending",
+            payment_status: "pending",
+            shipping_address: orderData.shippingAddress || {},
+            subtotal: orderData.subtotal,
+            shipping: orderData.shipping,
+            total: orderData.total
+          })
+          .select()
+          .single();
+
+        if (orderError) return fail(orderError.message);
+
+        const itemsPayload = (orderData.items || []).map((item) => ({
+          order_id: order.id,
+          product_id: item.product,
+          quantity: item.quantity,
+          price: item.price
+        }));
+
+        if (itemsPayload.length > 0) {
+          const { error: itemsError } = await sb.from("order_items").insert(itemsPayload);
+          if (itemsError) return fail(itemsError.message);
+        }
+
+        return ok({
+          _id: order.id,
+          id: order.id,
+          orderNumber: order.order_number,
+          total: Number(order.total || 0),
+          status: order.status,
+          createdAt: order.created_at
+        });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async getMyOrders() {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        const { data: orders, error } = await sb
+          .from("orders")
+          .select("id, order_number, status, total, tracking_code, created_at")
+          .eq("customer_id", customer.id)
+          .order("created_at", { ascending: false });
+
+        if (error) return fail(error.message);
+
+        const mappedOrders = [];
+        for (const order of orders || []) {
+          const items = await getOrderItemsWithProducts(order.id);
+          mappedOrders.push({
+            _id: order.id,
+            id: order.id,
+            orderNumber: order.order_number,
+            status: order.status,
+            total: Number(order.total || 0),
+            trackingCode: order.tracking_code,
+            createdAt: order.created_at,
+            items
+          });
+        }
+
+        return ok({ orders: mappedOrders });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async getById() {
+      return fail("Não implementado nesta versão");
+    },
+
+    async getAllAdmin() {
+      return fail("Não implementado nesta versão");
+    },
+
+    async updateStatus() {
+      return fail("Não implementado nesta versão");
+    }
+  };
+
+  // ========================================
+  // Payments
+  // ========================================
+
+  const PaymentsAPI = {
+    async createPreference() {
+      return fail("Mercado Pago requer backend seguro. Nesta versão Supabase frontend-only, checkout gera pedido sem redirecionamento externo.");
+    },
+    async getStatus() {
+      return ok({ status: "pending" });
+    }
+  };
+
+  const AdminAPI = {
+    async getDashboard() {
+      const productsRes = await ProductsAPI.getAll();
+      return ok({
+        productsCount: productsRes.success ? productsRes.data.products.length : 0
+      });
+    }
+  };
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value || 0));
+  }
+
+  function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
     });
-  },
-
-  async update(id, productData) {
-    return await apiRequest(`/admin/products/${id}`, {
-      method: 'PUT',
-      body: productData
-    });
-  },
-
-  async delete(id) {
-    return await apiRequest(`/admin/products/${id}`, {
-      method: 'DELETE'
-    });
   }
-};
 
-// ========================================
-// API de Pedidos
-// ========================================
+  function validateCPF(cpf) {
+    const normalized = String(cpf || "").replace(/\D/g, "");
+    if (normalized.length !== 11) return false;
+    if (/^(\d)\1+$/.test(normalized)) return false;
 
-const OrdersAPI = {
-  async create(orderData) {
-    return await apiRequest('/orders', {
-      method: 'POST',
-      body: orderData
-    });
-  },
+    let sum = 0;
+    for (let i = 0; i < 9; i += 1) sum += Number(normalized[i]) * (10 - i);
+    let digit = 11 - (sum % 11);
+    if (digit > 9) digit = 0;
+    if (digit !== Number(normalized[9])) return false;
 
-  async getMyOrders() {
-    return await apiRequest('/orders');
-  },
-
-  async getById(id) {
-    return await apiRequest(`/orders/${id}`);
-  },
-
-  async getAllAdmin(filters = {}) {
-    const params = new URLSearchParams(filters);
-    return await apiRequest(`/admin/orders?${params}`);
-  },
-
-  async updateStatus(id, status, trackingCode) {
-    return await apiRequest(`/admin/orders/${id}/status`, {
-      method: 'PUT',
-      body: { status, trackingCode }
-    });
+    sum = 0;
+    for (let j = 0; j < 10; j += 1) sum += Number(normalized[j]) * (11 - j);
+    digit = 11 - (sum % 11);
+    if (digit > 9) digit = 0;
+    return digit === Number(normalized[10]);
   }
-};
 
-// ========================================
-// API de Clientes
-// ========================================
-
-const CustomersAPI = {
-  async getProfile() {
-    return await apiRequest('/customers/profile');
-  },
-
-  async updateProfile(profileData) {
-    return await apiRequest('/customers/profile', {
-      method: 'PUT',
-      body: profileData
-    });
-  },
-
-  async addAddress(addressData) {
-    return await apiRequest('/customers/addresses', {
-      method: 'POST',
-      body: addressData
-    });
-  },
-
-  async updateAddress(addressId, addressData) {
-    return await apiRequest(`/customers/addresses/${addressId}`, {
-      method: 'PUT',
-      body: addressData
-    });
-  },
-
-  async deleteAddress(addressId) {
-    return await apiRequest(`/customers/addresses/${addressId}`, {
-      method: 'DELETE'
-    });
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email || "");
   }
-};
 
-// ========================================
-// API de Pagamentos
-// ========================================
-
-const PaymentsAPI = {
-  async createPreference(orderId) {
-    return await apiRequest('/payments/create-preference', {
-      method: 'POST',
-      body: { orderId }
-    });
-  },
-
-  async getStatus(orderId) {
-    return await apiRequest(`/payments/status/${orderId}`);
+  function maskPhone(value) {
+    let v = String(value || "").replace(/\D/g, "");
+    if (v.length <= 11) {
+      v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+      v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+    }
+    return v;
   }
-};
 
-// ========================================
-// API de Categorias
-// ========================================
-
-const CategoriesAPI = {
-  async getAll() {
-    return await apiRequest('/categories');
-  },
-
-  async create(categoryData) {
-    return await apiRequest('/admin/categories', {
-      method: 'POST',
-      body: categoryData
-    });
+  function maskCEP(value) {
+    let v = String(value || "").replace(/\D/g, "");
+    if (v.length <= 8) v = v.replace(/^(\d{5})(\d)/, "$1-$2");
+    return v;
   }
-};
 
-// ========================================
-// API Admin Dashboard
-// ========================================
-
-const AdminAPI = {
-  async getDashboard() {
-    return await apiRequest('/admin/dashboard');
+  function maskCPF(value) {
+    let v = String(value || "").replace(/\D/g, "");
+    if (v.length <= 11) {
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d)/, "$1.$2");
+      v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    return v;
   }
-};
 
-// ========================================
-// Utilidades
-// ========================================
+  window.FanjoyAPI = {
+    Auth: AuthAPI,
+    Products: ProductsAPI,
+    Orders: OrdersAPI,
+    Customers: CustomersAPI,
+    Payments: PaymentsAPI,
+    Categories: CategoriesAPI,
+    Admin: AdminAPI,
+    Utils: {
+      formatCurrency,
+      formatDate,
+      validateCPF,
+      validateEmail,
+      maskPhone,
+      maskCEP,
+      maskCPF
+    }
+  };
 
-// Formatar moeda
-function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
-}
+  console.log("Fanjoy API inicializada com Supabase");
+})();
 
-// Formatar data
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
-}
-
-// Validar CPF
-function validateCPF(cpf) {
-  cpf = cpf.replace(/\D/g, '');
-  if (cpf.length !== 11) return false;
-  
-  // Validação simplificada
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(cpf.charAt(i)) * (10 - i);
-  }
-  let digit = 11 - (sum % 11);
-  if (digit > 9) digit = 0;
-  if (digit !== parseInt(cpf.charAt(9))) return false;
-  
-  sum = 0;
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(cpf.charAt(i)) * (11 - i);
-  }
-  digit = 11 - (sum % 11);
-  if (digit > 9) digit = 0;
-  if (digit !== parseInt(cpf.charAt(10))) return false;
-  
-  return true;
-}
-
-// Validar e-mail
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-// Máscara de telefone
-function maskPhone(value) {
-  value = value.replace(/\D/g, '');
-  if (value.length <= 11) {
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-    value = value.replace(/(\d)(\d{4})$/, '$1-$2');
-  }
-  return value;
-}
-
-// Máscara de CEP
-function maskCEP(value) {
-  value = value.replace(/\D/g, '');
-  if (value.length <= 8) {
-    value = value.replace(/^(\d{5})(\d)/, '$1-$2');
-  }
-  return value;
-}
-
-// Máscara de CPF
-function maskCPF(value) {
-  value = value.replace(/\D/g, '');
-  if (value.length <= 11) {
-    value = value.replace(/(\d{3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-  }
-  return value;
-}
-
-// ========================================
-// Inicialização do Mercado Pago
-// ========================================
-
-let mercadoPagoInstance = null;
-
-function initMercadoPago() {
-  if (typeof MercadoPago !== 'undefined' && MERCADOPAGO_PUBLIC_KEY !== 'SUA_PUBLIC_KEY_AQUI') {
-    mercadoPagoInstance = new MercadoPago(MERCADOPAGO_PUBLIC_KEY);
-    console.log('✅ Mercado Pago inicializado');
-  } else {
-    console.warn('⚠️ Mercado Pago não inicializado. Configure a PUBLIC_KEY');
-  }
-}
-
-// Auto-inicializar se o script do MP estiver carregado
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initMercadoPago);
-} else {
-  initMercadoPago();
-}
-
-// ========================================
-// Exportar para uso global
-// ========================================
-
-window.FanjoyAPI = {
-  Auth: AuthAPI,
-  Products: ProductsAPI,
-  Orders: OrdersAPI,
-  Customers: CustomersAPI,
-  Payments: PaymentsAPI,
-  Categories: CategoriesAPI,
-  Admin: AdminAPI,
-  Utils: {
-    formatCurrency,
-    formatDate,
-    validateCPF,
-    validateEmail,
-    maskPhone,
-    maskCEP,
-    maskCPF
-  }
-};
-
-console.log('✅ Fanjoy API configurada e pronta para uso');
-console.log('📡 API URL:', API_CONFIG.baseURL);

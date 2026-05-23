@@ -327,8 +327,8 @@
   </div>
 
   <script>
-    let cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
-
+    // cart é gerenciado por cart-integration.js
+    
     function renderCart() {
       const container = document.getElementById('cartContent');
 
@@ -514,7 +514,11 @@
   <!-- Mercado Pago SDK -->
   <script src="https://sdk.mercadopago.com/js/v2"></script>
   <!-- API Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/cart-integration.js"></script>
 </body>
 </html>
+
+
