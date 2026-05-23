@@ -33,9 +33,13 @@
   }
 
   async function getSessionUser() {
-    const { data, error } = await sb.auth.getUser();
-    if (error) return null;
-    return data?.user || null;
+    const { data: userData, error: userError } = await sb.auth.getUser();
+    if (!userError && userData?.user) return userData.user;
+
+    // Fallback: when getUser fails transiently, try local session object
+    const { data: sessionData } = await sb.auth.getSession();
+    if (sessionData?.session?.user) return sessionData.session.user;
+    return null;
   }
 
   async function getCustomerProfileByUserId(userId) {
@@ -176,7 +180,7 @@
         if (error) return fail(error.message);
 
         const customer = await buildCustomerPayload(data.user);
-        if (!customer) return fail("Perfil do cliente n�o encontrado");
+        if (!customer) return fail("Perfil do cliente não encontrado");
 
         sessionStorage.setItem("fanjoy_customer_logged", "true");
         sessionStorage.setItem("fanjoy_customer_id", customer._id);
@@ -189,7 +193,7 @@
     },
 
     async adminLogin(credentials) {
-      return fail("Login admin � local na p�gina login.html");
+      return fail("Login admin é local na página login.html");
     },
 
     async logout() {
@@ -202,7 +206,14 @@
     },
 
     isAuthenticated() {
-      return sessionStorage.getItem("fanjoy_customer_logged") === "true";
+      try {
+        const raw = localStorage.getItem("fanjoy_supabase_auth");
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        return !!(parsed?.access_token || parsed?.currentSession?.access_token || parsed?.session?.access_token);
+      } catch {
+        return false;
+      }
     }
   };
 
