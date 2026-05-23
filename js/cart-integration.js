@@ -86,59 +86,47 @@ async function checkout() {
     return;
   }
 
-  // Fonte de verdade: perfil do Supabase (evita loop por flag local stale)
+  // Checkout guest: tenta perfil, mas não bloqueia pagamento se sessão falhar
+  let customer = null;
   const profileResponse = await FanjoyAPI.Customers.getProfile();
-  if (!profileResponse.success) {
-    if (confirm('Você precisa fazer login para continuar. Ir para login?')) {
-      sessionStorage.setItem('fanjoy_checkout_redirect', 'true');
-      window.location.href = 'customer-login.html';
-    }
-    return;
+  if (profileResponse.success) {
+    customer = profileResponse.data;
+    sessionStorage.setItem('fanjoy_customer_logged', 'true');
+    sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
+    sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
   }
-
-  const customer = profileResponse.data;
-  sessionStorage.setItem('fanjoy_customer_logged', 'true');
-  sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
-  sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
   const shipping = subtotal >= 200 ? 0 : 15;
   const total = subtotal + shipping;
 
-  if (!customer.addresses || customer.addresses.length === 0) {
-    if (confirm('Você precisa cadastrar endereço antes de pagar. Ir para perfil?')) {
-      window.location.href = 'customer-profile.html';
+  // Se tiver perfil+endereço, cria pedido no Supabase. Se não tiver, segue como guest.
+  let orderId = `guest-${Date.now()}`;
+  if (customer && customer.addresses && customer.addresses.length > 0) {
+    const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
+    const orderResp = await FanjoyAPI.Orders.create({
+      items: cart.map((item) => ({
+        product: item.id,
+        quantity: Number(item.quantity),
+        price: Number(item.price)
+      })),
+      shippingAddress: {
+        street: defaultAddress.street,
+        number: defaultAddress.number,
+        complement: defaultAddress.complement || '',
+        neighborhood: defaultAddress.neighborhood,
+        city: defaultAddress.city,
+        state: defaultAddress.state,
+        cep: defaultAddress.cep
+      },
+      subtotal,
+      shipping,
+      total
+    });
+
+    if (orderResp.success) {
+      orderId = orderResp.data._id || orderResp.data.id || orderId;
     }
-    return;
   }
-
-  const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
-
-  const orderResp = await FanjoyAPI.Orders.create({
-    items: cart.map((item) => ({
-      product: item.id,
-      quantity: Number(item.quantity),
-      price: Number(item.price)
-    })),
-    shippingAddress: {
-      street: defaultAddress.street,
-      number: defaultAddress.number,
-      complement: defaultAddress.complement || '',
-      neighborhood: defaultAddress.neighborhood,
-      city: defaultAddress.city,
-      state: defaultAddress.state,
-      cep: defaultAddress.cep
-    },
-    subtotal,
-    shipping,
-    total
-  });
-
-  if (!orderResp.success) {
-    alert(orderResp.message || 'Não foi possível criar o pedido.');
-    return;
-  }
-
-  const orderId = orderResp.data._id || orderResp.data.id;
 
   const baseUrl = window.location.origin;
   const resp = await fetch('/api/create-preference', {
@@ -146,7 +134,7 @@ async function checkout() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       orderId,
-      customerEmail: customer.email,
+      customerEmail: customer?.email || null,
       successUrl: `${baseUrl}/customer-profile.html?payment=success`,
       failureUrl: `${baseUrl}/cart.html?payment=failure`,
       pendingUrl: `${baseUrl}/cart.html?payment=pending`,
