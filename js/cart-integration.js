@@ -86,8 +86,9 @@ async function checkout() {
     return;
   }
 
-  const isLogged = FanjoyAPI.Auth.isAuthenticated && FanjoyAPI.Auth.isAuthenticated();
-  if (!isLogged) {
+  // Fonte de verdade: perfil do Supabase (evita loop por flag local stale)
+  const profileResponse = await FanjoyAPI.Customers.getProfile();
+  if (!profileResponse.success) {
     if (confirm('Você precisa fazer login para continuar. Ir para login?')) {
       sessionStorage.setItem('fanjoy_checkout_redirect', 'true');
       window.location.href = 'customer-login.html';
@@ -95,14 +96,10 @@ async function checkout() {
     return;
   }
 
-  const profileResponse = await FanjoyAPI.Customers.getProfile();
-  if (!profileResponse.success) {
-    alert('Erro ao carregar perfil. Faça login novamente.');
-    FanjoyAPI.Auth.logout();
-    return;
-  }
-
   const customer = profileResponse.data;
+  sessionStorage.setItem('fanjoy_customer_logged', 'true');
+  sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
+  sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
   const shipping = subtotal >= 200 ? 0 : 15;
   const total = subtotal + shipping;
