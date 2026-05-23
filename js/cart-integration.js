@@ -176,3 +176,6 @@ function checkCheckoutRedirect() {
     sessionStorage.removeItem('fanjoy_checkout_redirect');
   }
 }
+
+
+
