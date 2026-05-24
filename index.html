@@ -425,19 +425,18 @@
       transform: scale(1.08);
     }
 
-    .product-tag {
-      position: absolute;
-      top: 16px;
-      left: 16px;
+    .product-highlight {
+      align-self: flex-start;
       padding: 6px 12px;
       border-radius: 8px;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: var(--text);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      z-index: 2;
+      margin-bottom: 6px;
     }
 
     .product-categories-tags {
@@ -615,23 +614,6 @@
 
     .carousel-nav.next {
       right: 12px;
-    }
-
-    .image-count-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(10px);
-      color: white;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
 
     footer {
@@ -1034,7 +1016,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80" alt="Camiseta">
-            <div class="product-tag">Novo</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Camiseta Oversize</h3>
@@ -1049,7 +1030,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1523365280197-f21d6cfc1c67?auto=format&fit=crop&w=600&q=80" alt="Caneca">
-            <div class="product-tag">Hot</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Caneca Holográfica</h3>
@@ -1064,7 +1044,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80" alt="Photocard">
-            <div class="product-tag">Exclusivo</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Photocard Set</h3>
@@ -1079,7 +1058,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1542293787938-4d273c3608b8?auto=format&fit=crop&w=600&q=80" alt="Moletom">
-            <div class="product-tag">Trending</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Moletom Stage</h3>
@@ -1094,7 +1072,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80" alt="Lightstick">
-            <div class="product-tag">Limited</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Lightstick Custom</h3>
@@ -1109,7 +1086,6 @@
         <div class="product-card">
           <div class="product-image">
             <img src="https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80" alt="Camiseta Custom">
-            <div class="product-tag">Customiza</div>
           </div>
           <div class="product-info">
             <h3 class="product-name">Camiseta Personalizada</h3>
@@ -1386,14 +1362,13 @@
                 <div class="carousel-dots">
                   ${images.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" onclick="goToImage(${product.id}, ${i}, event)"></div>`).join('')}
                 </div>
-                <div class="image-count-badge">Imgs ${images.length}</div>
               </div>
             ` : `
               <img src="${images[0]}" alt="${product.name}">
             `}
-            <div class="product-tag">${product.tag}</div>
           </div>
           <div class="product-info">
+            ${product.tag ? `<div class="product-highlight">${product.tag}</div>` : ''}
             <div class="product-categories-tags">
               ${(product.categories || [product.category]).map(cat => `<span>${cat}</span>`).join('')}
             </div>
