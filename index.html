@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fanjoy Lab - Fanmade Store</title>
+  <title>Fanjoy - Fanmade Store</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -97,8 +97,10 @@
     .logo img {
       width: 90px;
       height: 90px;
-      object-fit: contain;
-      filter: drop-shadow(0 0 20px rgba(255, 107, 206, 0.6));
+      object-fit: cover;
+      border-radius: 50%;
+      clip-path: circle(50%);
+      filter: drop-shadow(0 0 12px rgba(255, 107, 206, 0.4));
       animation: logoFloat 3s ease-in-out infinite;
     }
 
@@ -1034,8 +1036,8 @@
   <header>
     <div class="nav-wrap">
       <div class="logo">
-        <img src="logo.png" alt="Fanjoy Lab">
-        Fanjoy Lab
+        <img src="logo.png" alt="Fanjoy">
+        Fanjoy
       </div>
       <div class="nav-actions">
         <button class="btn ghost" onclick="toggleMiniCart(true)" style="position: relative; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
@@ -1235,7 +1237,7 @@
   </main>
 
   <footer>
-    <p><strong>Fanjoy Lab</strong> © 2026 - Fanmade store premium • Envios para todo Brasil</p>
+    <p><strong>Fanjoy</strong> © 2026 - Fanmade store premium • Envios para todo Brasil</p>
     <a href="login.html" class="admin-lock" title="Acesso administrativo">Admin</a>
   </footer>
 
@@ -1284,14 +1286,13 @@
       if (themeCfg.bg) document.documentElement.style.setProperty('--bg', themeCfg.bg);
       if (themeCfg.text) document.documentElement.style.setProperty('--text', themeCfg.text);
 
-      if (siteCfg.siteName) {
-        document.title = `${siteCfg.siteName} - Fanmade Store`;
-      }
+      const effectiveSiteName = (siteCfg.siteName || 'Fanjoy').replace(/\s+lab$/i, '').trim() || 'Fanjoy';
+      document.title = `${effectiveSiteName} - Fanmade Store`;
 
       const logo = document.querySelector('.logo');
-      if (logo && siteCfg.siteName) {
+      if (logo) {
         const logoImg = siteCfg.logoUrl || 'logo.png';
-        logo.innerHTML = `<img src="${logoImg}" alt="${siteCfg.siteName}">${siteCfg.siteName}`;
+        logo.innerHTML = `<img src="${logoImg}" alt="${effectiveSiteName}">${effectiveSiteName}`;
       }
 
       const heroTitle = document.querySelector('.hero-content h1');
