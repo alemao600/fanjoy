@@ -191,7 +191,7 @@
     }
 
     .hero {
-      min-height: 90vh;
+      min-height: 72vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -245,31 +245,6 @@
       text-align: center;
       position: relative;
       z-index: 2;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 100px;
-      background: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 24px;
-      backdrop-filter: blur(10px);
-      animation: slideDown 0.8s ease-out, badgePulse 2s ease-in-out infinite;
-    }
-
-    @keyframes badgePulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    .badge::before {
-      content: '*';
-      font-size: 14px;
     }
 
     h1 {
@@ -328,7 +303,7 @@
     }
 
     .products {
-      padding: 100px clamp(20px, 4vw, 60px);
+      padding: 70px clamp(20px, 4vw, 60px);
       position: relative;
     }
 
@@ -659,58 +634,6 @@
       gap: 4px;
     }
 
-    .cta-section {
-      padding: 100px clamp(20px, 4vw, 60px);
-      position: relative;
-    }
-
-    .cta-box {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 60px 40px;
-      border-radius: 30px;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .cta-box::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(255, 107, 206, 0.2), transparent 70%);
-      animation: pulse 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
-    }
-
-    .cta-box h2 {
-      font-size: clamp(28px, 4vw, 48px);
-      font-weight: 800;
-      margin: 0 0 16px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .cta-box p {
-      font-size: 18px;
-      color: var(--muted);
-      margin: 0 0 32px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .cta-box .btn {
-      position: relative;
-      z-index: 1;
-    }
-
     footer {
       padding: 40px clamp(20px, 4vw, 60px);
       border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -981,38 +904,6 @@
       }
     }
 
-    .scroll-indicator {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      animation: bounce 2s ease-in-out infinite;
-    }
-
-    .scroll-indicator span {
-      font-size: 12px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    .scroll-indicator::after {
-      content: '';
-      width: 2px;
-      height: 30px;
-      background: linear-gradient(to bottom, var(--accent), transparent);
-      border-radius: 2px;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(10px); }
-    }
-
     @media (max-width: 768px) {
       .nav-actions .btn.ghost {
         display: none;
@@ -1056,7 +947,6 @@
       <div class="floating-shape shape-3"></div>
       
       <div class="hero-content">
-        <div class="badge">Loja fanmade oficial</div>
         <h1>
           Seu fanmade<br>
           <span class="gradient-text">diferente de tudo</span>
@@ -1071,9 +961,6 @@
         </div>
       </div>
 
-      <div class="scroll-indicator">
-        <span>Scroll</span>
-      </div>
     </section>
 
     <section class="products">
@@ -1226,13 +1113,6 @@
       </div>
     </section>
 
-    <section class="cta-section">
-      <div class="cta-box">
-        <h2>Fique por dentro dos <span class="gradient-text">próximos drops</span></h2>
-        <p>Inscreva-se e receba em primeira mão as novidades, promoções e lançamentos exclusivos</p>
-        <button class="btn primary" onclick="handleNewsletterClick()">Inscrever agora</button>
-      </div>
-    </section>
   </main>
 
   <footer>
@@ -1307,21 +1187,6 @@
       const heroSubtitle = document.querySelector('.hero-subtitle');
       if (heroSubtitle && siteCfg.heroSubtitle) {
         heroSubtitle.textContent = siteCfg.heroSubtitle;
-      }
-
-      const ctaTitle = document.querySelector('.cta-box h2');
-      if (ctaTitle && siteCfg.ctaTitle) {
-        ctaTitle.textContent = siteCfg.ctaTitle;
-      }
-
-      const ctaText = document.querySelector('.cta-box p');
-      if (ctaText && siteCfg.ctaText) {
-        ctaText.textContent = siteCfg.ctaText;
-      }
-
-      const ctaBtn = document.querySelector('.cta-box .btn.primary');
-      if (ctaBtn && siteCfg.ctaBtn) {
-        ctaBtn.textContent = siteCfg.ctaBtn;
       }
 
       const footerText = document.querySelector('footer p');
@@ -1467,15 +1332,6 @@
       const productsSection = document.querySelector('.products');
       if (productsSection) {
         productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-
-    function handleNewsletterClick() {
-      const email = prompt('Digite seu e-mail para receber novidades:');
-      if (email && email.includes('@')) {
-        alert('Obrigado! Você foi inscrito com sucesso!');
-      } else if (email) {
-        alert('Por favor, digite um e-mail válido.');
       }
     }
 
