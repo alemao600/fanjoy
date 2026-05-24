@@ -1707,68 +1707,17 @@
       return [
         {
           id: 1,
-          name: 'Camiseta Oversize',
-          description: 'Algodão premium 280g, print neon high quality',
-          price: 149,
-          images: ['https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80',
-          tag: 'Novo',
+          name: 'Camiseta BTS',
+          description: 'Camiseta oficial com estampa BTS. Modelagem confortável e tecido premium.',
+          price: 129,
+          images: [
+            'assets/products/camiseta-bts/camiseta.png',
+            'assets/products/camiseta-bts/camisetamodelofrente.png',
+            'assets/products/camiseta-bts/camisetamodelocostas.png'
+          ],
+          image: 'assets/products/camiseta-bts/camiseta.png',
+          tag: 'Destaque',
           buttonText: 'Comprar',
-          category: 'Camiseta'
-        },
-        {
-          id: 2,
-          name: 'Caneca Holográfica',
-          description: 'Acabamento holo, interior colorido + brinde',
-          price: 69,
-          images: ['https://images.unsplash.com/photo-1523365280197-f21d6cfc1c67?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1523365280197-f21d6cfc1c67?auto=format&fit=crop&w=600&q=80',
-          tag: 'Hot',
-          buttonText: 'Comprar',
-          category: 'Caneca'
-        },
-        {
-          id: 3,
-          name: 'Photocard Set',
-          description: 'Papel 400g, laminação premium + QR code',
-          price: 79,
-          images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80',
-          tag: 'Exclusivo',
-          buttonText: 'Comprar',
-          category: 'Photocard'
-        },
-        {
-          id: 4,
-          name: 'Moletom Stage',
-          description: 'Oversized, patches refletivos, termocrômico',
-          price: 249,
-          images: ['https://images.unsplash.com/photo-1542293787938-4d273c3608b8?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1542293787938-4d273c3608b8?auto=format&fit=crop&w=600&q=80',
-          tag: 'Trending',
-          buttonText: 'Comprar',
-          category: 'Moletom'
-        },
-        {
-          id: 5,
-          name: 'Lightstick Custom',
-          description: 'Base acrílica, LED RGB, bateria recarregável',
-          price: 289,
-          images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
-          tag: 'Limited',
-          buttonText: 'Comprar',
-          category: 'Acessório'
-        },
-        {
-          id: 6,
-          name: 'Camiseta Personalizada',
-          description: 'Escolha grupo, cor e nome. Print UV resistente',
-          price: 179,
-          images: ['https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80'],
-          image: 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80',
-          tag: 'Customiza',
-          buttonText: 'Personalizar',
           category: 'Camiseta'
         }
       ];
@@ -1802,9 +1751,11 @@
       // Check customer login status
       checkCustomerLogin();
       
-      // Save default products if none exist
-      if (!localStorage.getItem('fanjoy_products')) {
+      // Force catálogo único atual para todos os usuários (evita produto antigo em cache)
+      const CATALOG_VERSION = 'fanjoy_catalog_v2_single_bts';
+      if (localStorage.getItem('fanjoy_catalog_version') !== CATALOG_VERSION) {
         localStorage.setItem('fanjoy_products', JSON.stringify(getDefaultProducts()));
+        localStorage.setItem('fanjoy_catalog_version', CATALOG_VERSION);
       }
       loadProducts();
 
