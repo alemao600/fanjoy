@@ -1037,7 +1037,6 @@
     <div class="nav-wrap">
       <div class="logo">
         <img src="logo.png" alt="Fanjoy">
-        Fanjoy
       </div>
       <div class="nav-actions">
         <button class="btn ghost" onclick="toggleMiniCart(true)" style="position: relative; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
@@ -1292,7 +1291,7 @@
       const logo = document.querySelector('.logo');
       if (logo) {
         const logoImg = siteCfg.logoUrl || 'logo.png';
-        logo.innerHTML = `<img src="${logoImg}" alt="${effectiveSiteName}">${effectiveSiteName}`;
+        logo.innerHTML = `<img src="${logoImg}" alt="${effectiveSiteName}">`;
       }
 
       const heroTitle = document.querySelector('.hero-content h1');
@@ -1866,6 +1865,7 @@
   <script src="js/api.js"></script>
 </body>
 </html>
+
 
 
 
