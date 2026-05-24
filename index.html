@@ -1270,7 +1270,8 @@
       }, 1400);
     }
 
-    function addToCart(productId) {
+    function addToCart(productId, event) {
+      if (event) event.stopPropagation();
       try {
         const allProducts = window.allProducts || [];
         const product = allProducts.find(p => p.id === productId || p._id === productId);
@@ -1372,19 +1373,20 @@
         const images = product.images || [product.image];
         const hasMultipleImages = images.length > 1;
         const sizeOptions = Array.isArray(product.sizes) ? product.sizes : [];
+        const safeId = JSON.stringify(product.id);
         
         return `
-        <div class="product-card" style="animation-delay: ${(index + 1) * 0.1}s;" data-product-id="${product.id}">
+        <div class="product-card" style="animation-delay: ${(index + 1) * 0.1}s;" data-product-id="${product.id}" onclick='openProductPage(${safeId})'>
           <div class="product-image">
             ${hasMultipleImages ? `
               <div class="image-carousel">
                 <div class="carousel-images">
                   ${images.map(img => `<img src="${img}" alt="${product.name}">`).join('')}
                 </div>
-                <button class="carousel-nav prev" onclick="changeImage(${product.id}, -1, event)">&lt;</button>
-                <button class="carousel-nav next" onclick="changeImage(${product.id}, 1, event)">&gt;</button>
+                <button class="carousel-nav prev" onclick='changeImage(${safeId}, -1, event)'>&lt;</button>
+                <button class="carousel-nav next" onclick='changeImage(${safeId}, 1, event)'>&gt;</button>
                 <div class="carousel-dots">
-                  ${images.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" onclick="goToImage(${product.id}, ${i}, event)"></div>`).join('')}
+                  ${images.map((_, i) => `<div class="carousel-dot ${i === 0 ? 'active' : ''}" onclick='goToImage(${safeId}, ${i}, event)'></div>`).join('')}
                 </div>
               </div>
             ` : `
@@ -1401,14 +1403,14 @@
             ${sizeOptions.length ? `
               <div style="display:flex;align-items:center;gap:8px;margin:2px 0 4px;">
                 <label style="font-size:12px;color:#6b7280;font-weight:700;">Tamanho</label>
-                <select class="product-size-select" style="padding:7px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-weight:700;font-size:13px;">
+                <select class="product-size-select" onclick="event.stopPropagation()" style="padding:7px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-weight:700;font-size:13px;">
                   ${sizeOptions.map((size, i) => `<option value="${size}" ${i === 0 ? 'selected' : ''}>${size}</option>`).join('')}
                 </select>
               </div>
             ` : ''}
             <div class="product-footer">
               <span class="product-price">R$ ${product.price}</span>
-              <button class="product-btn" onclick="addToCart(${product.id})">${product.buttonText || 'Comprar'}</button>
+              <button class="product-btn" onclick='addToCart(${safeId}, event)'>${product.buttonText || 'Comprar'}</button>
             </div>
           </div>
         </div>
@@ -1581,17 +1583,19 @@
         {
           id: 1,
           name: 'Camiseta BTS',
-          description: 'Camiseta oficial com estampa BTS. Modelagem confortável e tecido premium.',
+          description: 'Camiseta fanmade com estampa BTS. Modelagem confortável e tecido premium.',
           price: 129,
           images: [
             'assets/products/camiseta-bts/camiseta.png',
             'assets/products/camiseta-bts/camisetamodelofrente.png',
-            'assets/products/camiseta-bts/camisetamodelocostas.png'
+            'assets/products/camiseta-bts/camisetamodelocostas.png',
+            'assets/products/camiseta-bts/tamanhos.png'
           ],
           image: 'assets/products/camiseta-bts/camiseta.png',
           tag: 'Destaque',
           buttonText: 'Comprar',
           category: 'Camiseta',
+          slug: 'camiseta-bts',
           sizes: ['P', 'M', 'G', 'GG']
         }
       ];
@@ -1626,7 +1630,7 @@
       checkCustomerLogin();
       
       // Force catálogo único atual para todos os usuários (evita produto antigo em cache)
-      const CATALOG_VERSION = 'fanjoy_catalog_v3_single_bts_sizes';
+      const CATALOG_VERSION = 'fanjoy_catalog_v4_single_bts_sizes_plus_chart';
       if (localStorage.getItem('fanjoy_catalog_version') !== CATALOG_VERSION) {
         localStorage.setItem('fanjoy_products', JSON.stringify(getDefaultProducts()));
         localStorage.setItem('fanjoy_catalog_version', CATALOG_VERSION);
@@ -1697,3 +1701,6 @@
 
 
 
+    function openProductPage(productId) {
+      window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
+    }
