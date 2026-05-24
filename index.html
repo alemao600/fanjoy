@@ -1345,6 +1345,10 @@
       }
     }
 
+    function openProductPage(productId) {
+      window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
+    }
+
     function loadProducts() {
       allProducts = JSON.parse(localStorage.getItem('fanjoy_products')) || getDefaultProducts();
       filteredProducts = [...allProducts];
@@ -1694,13 +1698,3 @@
   <script src="js/api.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-    function openProductPage(productId) {
-      window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
-    }
