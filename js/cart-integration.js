@@ -7,7 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function loadCart() {
-  cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
+  cart = (JSON.parse(localStorage.getItem('fanjoy_cart')) || []).map((item) => ({
+    ...item,
+    cartKey: item.cartKey || `${item.id}::${item.size || ''}`
+  }));
 }
 
 function saveCart() {
@@ -37,13 +40,14 @@ function renderCart() {
       <img src="${item.image || ''}" alt="${item.name}">
       <div style="flex:1;">
         <h4>${item.name}</h4>
+        ${item.size ? `<p>Tamanho: ${item.size}</p>` : ''}
         <p>Preço unitário: R$ ${Number(item.price).toFixed(2)}</p>
         <div class="qty">
-          <button onclick="updateQuantity('${item.id}', ${Number(item.quantity) - 1})">-</button>
+          <button onclick="updateQuantity('${item.cartKey}', ${Number(item.quantity) - 1})">-</button>
           <strong>${item.quantity}</strong>
-          <button onclick="updateQuantity('${item.id}', ${Number(item.quantity) + 1})">+</button>
+          <button onclick="updateQuantity('${item.cartKey}', ${Number(item.quantity) + 1})">+</button>
         </div>
-        <button class="remove" onclick="removeFromCart('${item.id}')">Remover</button>
+        <button class="remove" onclick="removeFromCart('${item.cartKey}')">Remover</button>
       </div>
       <div style="font-weight:800;">R$ ${(Number(item.price) * Number(item.quantity)).toFixed(2)}</div>
     </div>
@@ -52,20 +56,20 @@ function renderCart() {
   updateCartSummary();
 }
 
-function updateQuantity(productId, newQuantity) {
+function updateQuantity(cartKey, newQuantity) {
   if (newQuantity < 1) {
-    removeFromCart(productId);
+    removeFromCart(cartKey);
     return;
   }
-  const target = cart.find((x) => String(x.id) === String(productId));
+  const target = cart.find((x) => String(x.cartKey) === String(cartKey));
   if (!target) return;
   target.quantity = newQuantity;
   saveCart();
   renderCart();
 }
 
-function removeFromCart(productId) {
-  cart = cart.filter((x) => String(x.id) !== String(productId));
+function removeFromCart(cartKey) {
+  cart = cart.filter((x) => String(x.cartKey) !== String(cartKey));
   saveCart();
   renderCart();
 }
@@ -139,7 +143,7 @@ async function checkout() {
       failureUrl: `${baseUrl}/cart.html?payment=failure`,
       pendingUrl: `${baseUrl}/cart.html?payment=pending`,
       items: cart.map((item) => ({
-        title: item.name,
+        title: item.size ? `${item.name} - Tam. ${item.size}` : item.name,
         quantity: Number(item.quantity),
         unit_price: Number(item.price)
       }))

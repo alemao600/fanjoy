@@ -1233,16 +1233,28 @@
 
       const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0);
       subtotalEl.textContent = `R$ ${subtotal.toFixed(2)}`;
-      list.innerHTML = cart.map((item) => `
+      list.innerHTML = cart.map((item, index) => `
         <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
           <img src="${item.image || ''}" alt="${item.name}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;background:#f3f4f6;">
           <div style="flex:1;">
             <div style="font-weight:700;font-size:14px;">${item.name}</div>
+            ${item.size ? `<div style="font-size:12px;color:#6b7280;">Tamanho: ${item.size}</div>` : ''}
             <div style="font-size:13px;color:#6b7280;">Qtd: ${item.quantity}</div>
             <div style="font-size:14px;font-weight:700;color:#7c3aed;">R$ ${Number(item.price).toFixed(2)}</div>
+            <button onclick="removeMiniCartItem(${index})" style="margin-top:6px;border:0;background:#fee2e2;color:#b91c1c;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px;font-weight:700;">Remover</button>
           </div>
         </div>
       `).join('');
+    }
+
+    function removeMiniCartItem(index) {
+      const cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
+      if (index < 0 || index >= cart.length) return;
+      cart.splice(index, 1);
+      localStorage.setItem('fanjoy_cart', JSON.stringify(cart));
+      updateCartCount();
+      renderMiniCart();
+      showCartToast('Item removido do carrinho');
     }
 
     function showCartToast(message) {
@@ -1267,17 +1279,28 @@
           return;
         }
 
+        const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+        const sizeSelect = productCard ? productCard.querySelector('.product-size-select') : null;
+        const selectedSize = sizeSelect ? sizeSelect.value : '';
+
         let cart = JSON.parse(localStorage.getItem('fanjoy_cart')) || [];
-        const existingItem = cart.find(item => item.id === productId || item.id === product._id);
+        const productInternalId = product._id || product.id;
+        const existingItem = cart.find(item => (
+          String(item.id) === String(productInternalId) &&
+          String(item.size || '') === String(selectedSize || '')
+        ));
 
         if (existingItem) {
           existingItem.quantity += 1;
         } else {
+          const cartKey = `${productInternalId}::${selectedSize || ''}`;
           cart.push({
-            id: product._id || product.id,
+            id: productInternalId,
+            cartKey,
             name: product.name,
             price: product.price,
             image: product.images ? product.images[0] : product.image,
+            size: selectedSize || null,
             quantity: 1
           });
         }
@@ -1348,6 +1371,7 @@
       grid.innerHTML = filteredProducts.map((product, index) => {
         const images = product.images || [product.image];
         const hasMultipleImages = images.length > 1;
+        const sizeOptions = Array.isArray(product.sizes) ? product.sizes : [];
         
         return `
         <div class="product-card" style="animation-delay: ${(index + 1) * 0.1}s;" data-product-id="${product.id}">
@@ -1374,6 +1398,14 @@
             </div>
             <h3 class="product-name">${product.name}</h3>
             <p class="product-desc">${product.description}</p>
+            ${sizeOptions.length ? `
+              <div style="display:flex;align-items:center;gap:8px;margin:2px 0 4px;">
+                <label style="font-size:12px;color:#6b7280;font-weight:700;">Tamanho</label>
+                <select class="product-size-select" style="padding:7px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-weight:700;font-size:13px;">
+                  ${sizeOptions.map((size, i) => `<option value="${size}" ${i === 0 ? 'selected' : ''}>${size}</option>`).join('')}
+                </select>
+              </div>
+            ` : ''}
             <div class="product-footer">
               <span class="product-price">R$ ${product.price}</span>
               <button class="product-btn" onclick="addToCart(${product.id})">${product.buttonText || 'Comprar'}</button>
@@ -1559,7 +1591,8 @@
           image: 'assets/products/camiseta-bts/camiseta.png',
           tag: 'Destaque',
           buttonText: 'Comprar',
-          category: 'Camiseta'
+          category: 'Camiseta',
+          sizes: ['P', 'M', 'G', 'GG']
         }
       ];
     }
@@ -1593,7 +1626,7 @@
       checkCustomerLogin();
       
       // Force catálogo único atual para todos os usuários (evita produto antigo em cache)
-      const CATALOG_VERSION = 'fanjoy_catalog_v2_single_bts';
+      const CATALOG_VERSION = 'fanjoy_catalog_v3_single_bts_sizes';
       if (localStorage.getItem('fanjoy_catalog_version') !== CATALOG_VERSION) {
         localStorage.setItem('fanjoy_products', JSON.stringify(getDefaultProducts()));
         localStorage.setItem('fanjoy_catalog_version', CATALOG_VERSION);
