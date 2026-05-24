@@ -116,10 +116,10 @@
     }
 
     .btn {
-      padding: 12px 24px;
-      border-radius: 12px;
+      padding: 10px 20px;
+      border-radius: 10px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border: none;
@@ -191,11 +191,11 @@
     }
 
     .hero {
-      min-height: 72vh;
+      min-height: 62vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px clamp(20px, 4vw, 60px);
+      padding: 24px clamp(20px, 4vw, 60px) 20px;
       position: relative;
     }
 
@@ -248,11 +248,11 @@
     }
 
     h1 {
-      font-size: clamp(40px, 8vw, 96px);
+      font-size: clamp(34px, 6.2vw, 78px);
       font-weight: 800;
       line-height: 1.1;
       letter-spacing: -0.03em;
-      margin: 0 0 24px;
+      margin: 0 0 18px;
       animation: slideUp 0.8s ease-out 0.2s both;
     }
 
@@ -264,17 +264,17 @@
     }
 
     .hero-subtitle {
-      font-size: clamp(18px, 3vw, 24px);
+      font-size: clamp(16px, 2.1vw, 19px);
       color: var(--muted);
       max-width: 700px;
-      margin: 0 auto 40px;
-      line-height: 1.6;
+      margin: 0 auto 28px;
+      line-height: 1.5;
       animation: slideUp 0.8s ease-out 0.4s both;
     }
 
     .hero-cta {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
       animation: slideUp 0.8s ease-out 0.6s both;
@@ -909,8 +909,18 @@
         display: none;
       }
 
+      .hero {
+        min-height: 56vh;
+        padding: 16px 16px 12px;
+      }
+
       h1 {
-        font-size: 48px;
+        font-size: 40px;
+      }
+
+      .hero-subtitle {
+        font-size: 17px;
+        margin-bottom: 20px;
       }
 
       .product-grid {
