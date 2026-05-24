@@ -1,7 +1,19 @@
 ﻿let cart = [];
+let selectedShipping = null;
+let shippingCep = "";
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCart();
+  loadSavedShipping();
   renderCart();
   checkCheckoutRedirect();
 });
@@ -15,6 +27,21 @@ function loadCart() {
 
 function saveCart() {
   localStorage.setItem('fanjoy_cart', JSON.stringify(cart));
+}
+
+function loadSavedShipping() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('fanjoy_shipping') || 'null');
+    if (!raw) return;
+    selectedShipping = raw.selectedShipping || null;
+    shippingCep = raw.shippingCep || "";
+    const cepInput = document.getElementById('shippingCep');
+    if (cepInput && shippingCep) cepInput.value = shippingCep;
+  } catch (_) {}
+}
+
+function saveShippingState() {
+  localStorage.setItem('fanjoy_shipping', JSON.stringify({ selectedShipping, shippingCep }));
 }
 
 function renderCart() {
@@ -37,10 +64,10 @@ function renderCart() {
 
   cartItems.innerHTML = cart.map((item) => `
     <div class="item">
-      <img src="${item.image || ''}" alt="${item.name}">
+      <img src="${item.image || ''}" alt="${escapeHtml(item.name)}">
       <div style="flex:1;">
-        <h4>${item.name}</h4>
-        ${item.size ? `<p>Tamanho: ${item.size}</p>` : ''}
+        <h4>${escapeHtml(item.name)}</h4>
+        ${item.size ? `<p>Tamanho: ${escapeHtml(item.size)}</p>` : ''}
         <p>Preço unitário: R$ ${Number(item.price).toFixed(2)}</p>
         <div class="qty">
           <button onclick="updateQuantity('${item.cartKey}', ${Number(item.quantity) - 1})">-</button>
@@ -74,13 +101,105 @@ function removeFromCart(cartKey) {
   renderCart();
 }
 
+function normalizeCep(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
+function getProductsForShipping() {
+  const totalQty = cart.reduce((sum, item) => sum + Number(item.quantity || 1), 0) || 1;
+  return [{
+    id: 'camiseta-bts',
+    width: 20,
+    height: 3,
+    length: 28,
+    weight: 0.25,
+    insurance_value: cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity || 1), 0),
+    quantity: totalQty
+  }];
+}
+
+async function calculateShipping() {
+  if (!cart.length) {
+    alert('Seu carrinho está vazio.');
+    return;
+  }
+
+  const cepInput = document.getElementById('shippingCep');
+  const statusEl = document.getElementById('shippingStatus');
+  const optionsEl = document.getElementById('shippingOptions');
+  if (!cepInput || !statusEl || !optionsEl) return;
+
+  shippingCep = normalizeCep(cepInput.value);
+  cepInput.value = shippingCep;
+
+  if (shippingCep.replace(/\D/g, '').length !== 8) {
+    statusEl.textContent = 'Digite um CEP válido com 8 números.';
+    return;
+  }
+
+  statusEl.textContent = 'Calculando frete real...';
+  optionsEl.innerHTML = '';
+
+  const resp = await fetch('/api/shipping-quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: { postal_code: shippingCep.replace(/\D/g, '') },
+      products: getProductsForShipping()
+    })
+  });
+
+  const data = await resp.json();
+  if (!resp.ok || !data.success) {
+    statusEl.textContent = data.message || 'Erro ao calcular frete.';
+    selectedShipping = null;
+    saveShippingState();
+    updateCartSummary();
+    return;
+  }
+
+  const options = data.data?.options || [];
+  if (!options.length) {
+    statusEl.textContent = 'Nenhuma opção de frete encontrada para este CEP.';
+    selectedShipping = null;
+    saveShippingState();
+    updateCartSummary();
+    return;
+  }
+
+  statusEl.textContent = 'Escolha uma opção de frete:';
+  optionsEl.innerHTML = options.map((opt, idx) => {
+    const optJson = JSON.stringify(opt).replace(/"/g, '&quot;');
+    return `
+      <label class="ship-option">
+        <input type="radio" name="shippingOption" ${idx === 0 ? 'checked' : ''} onchange="selectShipping('${optJson}')">
+        <span>${escapeHtml(opt.name)} (${escapeHtml(opt.delivery_time || '?')} dias)</span>
+        <strong>R$ ${Number(opt.price || 0).toFixed(2)}</strong>
+      </label>
+    `;
+  }).join('');
+
+  selectedShipping = options[0];
+  saveShippingState();
+  updateCartSummary();
+}
+
+function selectShipping(serializedOption) {
+  try {
+    selectedShipping = JSON.parse(serializedOption);
+    saveShippingState();
+    updateCartSummary();
+  } catch (_) {}
+}
+
 function updateCartSummary() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
-  const shipping = subtotal >= 200 ? 0 : 15;
+  const shipping = selectedShipping ? Number(selectedShipping.price || 0) : 0;
   const total = subtotal + shipping;
 
   document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
-  document.getElementById('shippingValue').textContent = shipping === 0 ? 'GRÁTIS' : `R$ ${shipping.toFixed(2)}`;
+  document.getElementById('shippingValue').textContent = selectedShipping ? `R$ ${shipping.toFixed(2)}` : 'Calcule o frete';
   document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
 }
 
@@ -90,7 +209,11 @@ async function checkout() {
     return;
   }
 
-  // Checkout guest: tenta perfil, mas não bloqueia pagamento se sessão falhar
+  if (!selectedShipping) {
+    alert('Calcule e selecione um frete real antes de pagar.');
+    return;
+  }
+
   let customer = null;
   const profileResponse = await FanjoyAPI.Customers.getProfile();
   if (profileResponse.success) {
@@ -99,11 +222,11 @@ async function checkout() {
     sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
     sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
   }
+
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
-  const shipping = subtotal >= 200 ? 0 : 15;
+  const shipping = Number(selectedShipping.price || 0);
   const total = subtotal + shipping;
 
-  // Se tiver perfil+endereço, cria pedido no Supabase. Se não tiver, segue como guest.
   let orderId = `guest-${Date.now()}`;
   if (customer && customer.addresses && customer.addresses.length > 0) {
     const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
@@ -142,11 +265,23 @@ async function checkout() {
       successUrl: `${baseUrl}/customer-profile.html?payment=success`,
       failureUrl: `${baseUrl}/cart.html?payment=failure`,
       pendingUrl: `${baseUrl}/cart.html?payment=pending`,
-      items: cart.map((item) => ({
-        title: item.size ? `${item.name} - Tam. ${item.size}` : item.name,
-        quantity: Number(item.quantity),
-        unit_price: Number(item.price)
-      }))
+      items: [
+        ...cart.map((item) => ({
+          title: item.size ? `${item.name} - Tam. ${item.size}` : item.name,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.price)
+        })),
+        {
+          title: `Frete - ${selectedShipping.name || 'Entrega'}`,
+          quantity: 1,
+          unit_price: shipping
+        }
+      ],
+      shipping: {
+        cep: shippingCep,
+        service: selectedShipping.name,
+        price: shipping
+      }
     })
   });
 
@@ -157,6 +292,7 @@ async function checkout() {
   }
 
   localStorage.removeItem('fanjoy_cart');
+  localStorage.removeItem('fanjoy_shipping');
   window.location.href = data.data.init_point;
 }
 
@@ -165,6 +301,3 @@ function checkCheckoutRedirect() {
     sessionStorage.removeItem('fanjoy_checkout_redirect');
   }
 }
-
-
-
