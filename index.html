@@ -1279,6 +1279,32 @@
         .filter(Boolean);
     }
 
+    function buildImageKey(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (raw.startsWith("data:")) return raw.slice(0, 120);
+      try {
+        const url = new URL(raw, window.location.origin);
+        return url.pathname.toLowerCase();
+      } catch {
+        return raw.toLowerCase();
+      }
+    }
+
+    function uniqueImages(urls) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of urls || []) {
+        const value = String(raw || "").trim();
+        if (!value) continue;
+        const key = buildImageKey(value);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
+      }
+      return out;
+    }
+
     function hydrateProductForStore(product) {
       const clone = { ...product };
       clone.categories = normalizeCategoryLabels(clone);
@@ -1298,18 +1324,19 @@
         clone.sizes = ["P", "M", "G", "GG"];
       }
 
-      if ((!Array.isArray(clone.images) || clone.images.length < 4) && String(clone.name || "").toLowerCase().includes("camiseta bts")) {
-        const fallback = [
+      const isBtsShirt = String(clone.name || "").toLowerCase().includes("camiseta bts");
+      const fallback = [
           "assets/products/camiseta-bts/camiseta.png",
           "assets/products/camiseta-bts/camisetamodelofrente.png",
           "assets/products/camiseta-bts/camisetamodelocostas.png",
           "assets/products/camiseta-bts/tamanhos.png"
-        ];
-        const current = Array.isArray(clone.images) ? clone.images.filter(Boolean) : [];
-        const merged = [...current];
-        fallback.forEach((url) => {
-          if (!merged.includes(url)) merged.push(url);
-        });
+      ];
+      const current = uniqueImages(Array.isArray(clone.images) ? clone.images : [clone.image]);
+      const merged = uniqueImages([...current, ...fallback]);
+      if (isBtsShirt) {
+        const ordered = fallback.map((wanted) => merged.find((img) => buildImageKey(img) === buildImageKey(wanted))).filter(Boolean);
+        clone.images = ordered.length === 4 ? ordered : merged.slice(0, 4);
+      } else {
         clone.images = merged;
       }
 
@@ -1356,7 +1383,7 @@
       }
 
       grid.innerHTML = filteredProducts.map((product, index) => {
-        const images = product.images || [product.image];
+        const images = uniqueImages(product.images || [product.image]);
         const hasMultipleImages = images.length > 1;
         const sizeOptions = Array.isArray(product.sizes) ? product.sizes : [];
         const safeId = JSON.stringify(product.id);

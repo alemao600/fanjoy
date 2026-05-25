@@ -98,6 +98,32 @@
       }
     }
 
+    function buildImageKey(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (raw.startsWith("data:")) return raw.slice(0, 120);
+      try {
+        const url = new URL(raw, window.location.origin);
+        return url.pathname.toLowerCase();
+      } catch {
+        return raw.toLowerCase();
+      }
+    }
+
+    function uniqueImages(urls) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of urls || []) {
+        const value = String(raw || "").trim();
+        if (!value) continue;
+        const key = buildImageKey(value);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
+      }
+      return out;
+    }
+
     function enrichProduct(product) {
       const output = { ...product };
       const variantData = getVariantStoreForProduct(output);
@@ -112,18 +138,22 @@
       if (!Array.isArray(output.sizes) || !output.sizes.length) {
         output.sizes = ["P", "M", "G", "GG"];
       }
-      const images = Array.isArray(output.images) ? output.images.filter(Boolean) : [];
-      if (images.length < 4 && String(output.name || "").toLowerCase().includes("camiseta bts")) {
-        [
+      const isBtsShirt = String(output.name || "").toLowerCase().includes("camiseta bts");
+      const fallback = [
           "assets/products/camiseta-bts/camiseta.png",
           "assets/products/camiseta-bts/camisetamodelofrente.png",
           "assets/products/camiseta-bts/camisetamodelocostas.png",
           "assets/products/camiseta-bts/tamanhos.png"
-        ].forEach((url) => {
-          if (!images.includes(url)) images.push(url);
-        });
+      ];
+      const images = uniqueImages(Array.isArray(output.images) ? output.images : [output.image]);
+      const merged = uniqueImages([...images, ...fallback]);
+      if (isBtsShirt) {
+        const ordered = fallback.map((wanted) => merged.find((img) => buildImageKey(img) === buildImageKey(wanted))).filter(Boolean);
+        output.images = ordered.length === 4 ? ordered : merged.slice(0, 4);
+      } else {
+        output.images = merged;
       }
-      output.images = images.length ? images : [output.image || ""];
+      if (!output.images || !output.images.length) output.images = [output.image || ""];
       return output;
     }
 

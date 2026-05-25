@@ -527,6 +527,20 @@
       document.getElementById("stock").value = total;
     }
 
+    function uniqueImageUrls(urls) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of urls || []) {
+        const value = String(raw || "").trim();
+        if (!value) continue;
+        const key = value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
+      }
+      return out;
+    }
+
     async function loadAll() {
       const [pr, cr] = await Promise.all([FanjoyAPI.Products.getAll(), FanjoyAPI.Categories.getAll()]);
       cachedProducts = pr.success ? (pr.data.products || []) : [];
@@ -816,6 +830,7 @@
           .filter(Boolean),
         categories: selectedCategories
       };
+      payload.images = uniqueImageUrls(payload.images);
       payload.image = payload.images[0] || "";
       const variantData = readVariantForm();
       payload.stock = variantData.total;
