@@ -7,12 +7,12 @@
   const SUPABASE_ANON_KEY = window.FANJOY_SUPABASE_ANON_KEY || "";
 
   if (!window.supabase || !window.supabase.createClient) {
-    console.error("Supabase SDK n�o carregado. Verifique o script CDN.");
+    console.error("Supabase SDK não carregado. Verifique o script CDN.");
     return;
   }
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error("Supabase n�o configurado. Defina FANJOY_SUPABASE_URL e FANJOY_SUPABASE_ANON_KEY em js/supabase-config.js");
+    console.error("Supabase não configurado. Defina FANJOY_SUPABASE_URL e FANJOY_SUPABASE_ANON_KEY em js/supabase-config.js");
   }
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -401,10 +401,10 @@
     async getProfile() {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await buildCustomerPayload(user);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         return ok(customer);
       } catch (err) {
@@ -415,7 +415,7 @@
     async updateProfile(profileData) {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const { error } = await sb
           .from("customers")
@@ -440,10 +440,10 @@
     async addAddress(addressData) {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         if (addressData.isDefault) {
           await sb.from("customer_addresses").update({ is_default: false }).eq("customer_id", customer.id);
@@ -451,7 +451,7 @@
 
         const { error } = await sb.from("customer_addresses").insert({
           customer_id: customer.id,
-          label: addressData.label || "Endere�o",
+          label: addressData.label || "Endereço",
           cep: addressData.cep,
           street: addressData.street,
           number: addressData.number,
@@ -473,10 +473,10 @@
     async updateAddress(addressId, addressData) {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         if (addressData.isDefault) {
           await sb.from("customer_addresses").update({ is_default: false }).eq("customer_id", customer.id);
@@ -485,7 +485,7 @@
         const { error } = await sb
           .from("customer_addresses")
           .update({
-            label: addressData.label || "Endere�o",
+            label: addressData.label || "Endereço",
             cep: addressData.cep,
             street: addressData.street,
             number: addressData.number,
@@ -509,10 +509,10 @@
     async deleteAddress(addressId) {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         const { error } = await sb
           .from("customer_addresses")
@@ -556,10 +556,10 @@
     async create(orderData) {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         const now = Date.now().toString().slice(-8);
 
@@ -608,10 +608,10 @@
     async getMyOrders() {
       try {
         const user = await getSessionUser();
-        if (!user) return fail("N�o autenticado");
+        if (!user) return fail("Não autenticado");
 
         const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil n�o encontrado");
+        if (!customer) return fail("Perfil não encontrado");
 
         const { data: orders, error } = await sb
           .from("orders")
@@ -643,15 +643,15 @@
     },
 
     async getById() {
-      return fail("N�o implementado nesta vers�o");
+      return fail("Não implementado nesta versão");
     },
 
     async getAllAdmin() {
-      return fail("N�o implementado nesta vers�o");
+      return fail("Não implementado nesta versão");
     },
 
     async updateStatus() {
-      return fail("N�o implementado nesta vers�o");
+      return fail("Não implementado nesta versão");
     }
   };
 
@@ -661,7 +661,7 @@
 
   const PaymentsAPI = {
     async createPreference() {
-      return fail("Mercado Pago requer backend seguro. Nesta vers�o Supabase frontend-only, checkout gera pedido sem redirecionamento externo.");
+      return fail("Mercado Pago requer backend seguro. Nesta versão Supabase frontend-only, checkout gera pedido sem redirecionamento externo.");
     },
     async getStatus() {
       return ok({ status: "pending" });
@@ -757,5 +757,6 @@
 
   console.log("Fanjoy API inicializada com Supabase");
 })();
+
 
 
