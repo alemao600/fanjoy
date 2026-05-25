@@ -273,6 +273,11 @@
             <label>Tag<input id="tag" placeholder="Novo, Hot, Promo" /></label>
             <label>Texto do botão<input id="buttonText" placeholder="Comprar" /></label>
             <label>Imagens (URL por linha)<textarea id="images" placeholder="https://...\nhttps://..."></textarea></label>
+            <div class="btn-row">
+              <button class="btn btn-secondary" type="button" onclick="document.getElementById('imageUploadInput').click()">Explorar imagens</button>
+              <span class="muted" style="align-self:center;">Seleciona da galeria/celular ou do PC</span>
+            </div>
+            <input id="imageUploadInput" type="file" accept="image/*" multiple style="display:none" />
             <div>
               <label>Categorias</label>
               <div id="categoryChecks" class="muted">Carregando categorias...</div>
@@ -635,6 +640,36 @@
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => (c.checked = false));
     }
 
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleProductImageUpload(fileList) {
+      const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
+      if (!files.length) return;
+
+      const imageField = document.getElementById("images");
+      const existing = imageField.value.trim();
+      const urls = existing ? existing.split("\n").map((x) => x.trim()).filter(Boolean) : [];
+
+      setStatus("productStatus", "Processando imagens...", true);
+      try {
+        for (const file of files) {
+          const dataUrl = await readFileAsDataURL(file);
+          urls.push(dataUrl);
+        }
+        imageField.value = urls.join("\n");
+        setStatus("productStatus", `${files.length} imagem(ns) adicionada(s).`);
+      } catch (error) {
+        setStatus("productStatus", `Erro ao carregar imagem: ${error.message}`, false);
+      }
+    }
+
     function editProduct(id) {
       const p = cachedProducts.find((x) => x.id === id);
       if (!p) return;
@@ -853,6 +888,7 @@
     }
 
     document.getElementById("productSearch").addEventListener("input", renderProducts);
+    document.getElementById("imageUploadInput").addEventListener("change", (e) => handleProductImageUpload(e.target.files));
 
     loadAll();
     loadSiteContent();
