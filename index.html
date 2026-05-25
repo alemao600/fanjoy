@@ -1349,8 +1349,23 @@
       window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
     }
 
-    function loadProducts() {
-      allProducts = JSON.parse(localStorage.getItem('fanjoy_products')) || getDefaultProducts();
+    async function loadProducts() {
+      try {
+        if (window.FanjoyAPI?.Products?.getAll) {
+          const response = await window.FanjoyAPI.Products.getAll();
+          if (response.success && Array.isArray(response.data?.products) && response.data.products.length) {
+            allProducts = response.data.products;
+          } else {
+            allProducts = getDefaultProducts();
+          }
+        } else {
+          allProducts = getDefaultProducts();
+        }
+      } catch (error) {
+        console.error("Erro ao carregar produtos da API, usando fallback local.", error);
+        allProducts = getDefaultProducts();
+      }
+
       filteredProducts = [...allProducts];
       renderProducts();
       updateCategoryFilter();
@@ -1628,18 +1643,13 @@
     }
 
     // Initialize products on page load
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       applyAdminSettings();
       // Check customer login status
       checkCustomerLogin();
       
       // Force catálogo único atual para todos os usuários (evita produto antigo em cache)
-      const CATALOG_VERSION = 'fanjoy_catalog_v4_single_bts_sizes_plus_chart';
-      if (localStorage.getItem('fanjoy_catalog_version') !== CATALOG_VERSION) {
-        localStorage.setItem('fanjoy_products', JSON.stringify(getDefaultProducts()));
-        localStorage.setItem('fanjoy_catalog_version', CATALOG_VERSION);
-      }
-      loadProducts();
+      await loadProducts();
 
       // Attach filter listeners
       const searchInput = document.getElementById('searchInput');

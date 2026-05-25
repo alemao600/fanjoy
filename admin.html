@@ -800,10 +800,11 @@
       const selectedCategoryIds = Array.from(document.querySelectorAll("#categoryChecks input[type='checkbox']:checked")).map((x) => x.value);
       const selectedCategories = cachedCategories.filter((c) => selectedCategoryIds.includes(c.id)).map((c) => c.name);
 
+      const rawPrice = (document.getElementById("price").value || "").toString().trim().replace(",", ".");
       const payload = {
         name: document.getElementById("name").value.trim(),
         description: document.getElementById("description").value.trim(),
-        price: Number(document.getElementById("price").value || 0),
+        price: Number(rawPrice || 0),
         stock: Number(document.getElementById("stock").value || 0),
         tag: document.getElementById("tag").value.trim() || null,
         buttonText: document.getElementById("buttonText").value.trim() || "Comprar",
