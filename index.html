@@ -1012,91 +1012,7 @@
         <span id="productsCount">0 produtos encontrados</span>
       </div>
 
-      <div class="product-grid">
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80" alt="Camiseta">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Camiseta Oversize</h3>
-            <p class="product-desc">Algodão premium 280g, print neon high quality</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 149</span>
-              <button class="product-btn">Comprar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1523365280197-f21d6cfc1c67?auto=format&fit=crop&w=600&q=80" alt="Caneca">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Caneca Holográfica</h3>
-            <p class="product-desc">Acabamento holo, interior colorido + brinde</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 69</span>
-              <button class="product-btn">Comprar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80" alt="Photocard">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Photocard Set</h3>
-            <p class="product-desc">Papel 400g, laminação premium + QR code</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 79</span>
-              <button class="product-btn">Comprar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1542293787938-4d273c3608b8?auto=format&fit=crop&w=600&q=80" alt="Moletom">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Moletom Stage</h3>
-            <p class="product-desc">Oversized, patches refletivos, termocrômico</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 249</span>
-              <button class="product-btn">Comprar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80" alt="Lightstick">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Lightstick Custom</h3>
-            <p class="product-desc">Base acrílica, LED RGB, bateria recarregável</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 289</span>
-              <button class="product-btn">Comprar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-card">
-          <div class="product-image">
-            <img src="https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80" alt="Camiseta Custom">
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">Camiseta Personalizada</h3>
-            <p class="product-desc">Escolha grupo, cor e nome. Print UV resistente</p>
-            <div class="product-footer">
-              <span class="product-price">R$ 179</span>
-              <button class="product-btn">Personalizar</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="product-grid"></div>
     </section>
 
   </main>
@@ -1349,12 +1265,63 @@
       window.location.href = `product.html?id=${encodeURIComponent(productId)}`;
     }
 
+    function normalizeCategoryLabels(product) {
+      const raw = Array.isArray(product.categories)
+        ? product.categories
+        : (product.category ? [product.category] : []);
+      return raw
+        .map((cat) => {
+          if (typeof cat === "string") return cat;
+          if (cat && typeof cat === "object") return cat.name || cat.slug || "";
+          return "";
+        })
+        .map((value) => String(value || "").trim())
+        .filter(Boolean);
+    }
+
+    function hydrateProductForStore(product) {
+      const clone = { ...product };
+      clone.categories = normalizeCategoryLabels(clone);
+
+      const variantStore = JSON.parse(localStorage.getItem("fanjoy_product_variants") || "{}");
+      const variantData = variantStore[clone.id] || variantStore[clone._id] || null;
+      if (variantData) {
+        if (Array.isArray(variantData.sizes) && variantData.sizes.length) {
+          clone.sizes = variantData.sizes;
+        }
+        if (variantData.variantStock && typeof variantData.variantStock === "object") {
+          clone.variantStock = variantData.variantStock;
+        }
+      }
+
+      if (!Array.isArray(clone.sizes) || !clone.sizes.length) {
+        clone.sizes = ["P", "M", "G", "GG"];
+      }
+
+      if ((!Array.isArray(clone.images) || clone.images.length < 4) && String(clone.name || "").toLowerCase().includes("camiseta bts")) {
+        const fallback = [
+          "assets/products/camiseta-bts/camiseta.png",
+          "assets/products/camiseta-bts/camisetamodelofrente.png",
+          "assets/products/camiseta-bts/camisetamodelocostas.png",
+          "assets/products/camiseta-bts/tamanhos.png"
+        ];
+        const current = Array.isArray(clone.images) ? clone.images.filter(Boolean) : [];
+        const merged = [...current];
+        fallback.forEach((url) => {
+          if (!merged.includes(url)) merged.push(url);
+        });
+        clone.images = merged;
+      }
+
+      return clone;
+    }
+
     async function loadProducts() {
       try {
         if (window.FanjoyAPI?.Products?.getAll) {
           const response = await window.FanjoyAPI.Products.getAll();
           if (response.success && Array.isArray(response.data?.products) && response.data.products.length) {
-            allProducts = response.data.products;
+            allProducts = response.data.products.map(hydrateProductForStore);
           } else {
             allProducts = getDefaultProducts();
           }
@@ -1415,7 +1382,7 @@
           <div class="product-info">
             ${product.tag ? `<div class="product-highlight">${product.tag}</div>` : ''}
             <div class="product-categories-tags">
-              ${(product.categories || [product.category]).map(cat => `<span>${cat}</span>`).join('')}
+              ${normalizeCategoryLabels(product).map(cat => `<span>${cat}</span>`).join('')}
             </div>
             <h3 class="product-name">${product.name}</h3>
             <p class="product-desc">${product.description}</p>
@@ -1428,7 +1395,7 @@
               </div>
             ` : ''}
             <div class="product-footer">
-              <span class="product-price">R$ ${product.price}</span>
+              <span class="product-price">R$ ${Number(product.price || 0).toFixed(2)}</span>
               <button class="product-btn" onclick='addToCart(${safeId}, event)'>${product.buttonText || 'Comprar'}</button>
             </div>
           </div>
@@ -1485,7 +1452,7 @@
       // Pegar categorias dos produtos (incluindo múltiplas categorias)
       const productCategories = [];
       allProducts.forEach(product => {
-        const cats = product.categories || [product.category];
+        const cats = normalizeCategoryLabels(product);
         productCategories.push(...cats);
       });
       const uniqueProductCategories = [...new Set(productCategories)];
@@ -1524,7 +1491,7 @@
                             product.description.toLowerCase().includes(searchTerm);
         
         // Suporte para múltiplas categorias
-        const productCategories = product.categories || [product.category];
+        const productCategories = normalizeCategoryLabels(product);
         const matchesCategory = !category || productCategories.includes(category);
         
         const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
