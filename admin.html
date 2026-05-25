@@ -278,6 +278,54 @@
               <span class="muted" style="align-self:center;">Seleciona da galeria/celular ou do PC</span>
             </div>
             <input id="imageUploadInput" type="file" accept="image/*" multiple style="display:none" />
+            <div class="card" style="padding:10px;">
+              <label style="display:block;margin-bottom:8px;">Variantes (Tamanho e Estoque)</label>
+              <div id="variantRows" class="stack" style="gap:8px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+                  <label style="margin:0;">
+                    Tamanho
+                    <input value="P" disabled />
+                  </label>
+                  <label style="margin:0;">
+                    Estoque P
+                    <input class="variant-stock-input" data-size="P" type="number" min="0" value="0" />
+                  </label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+                  <label style="margin:0;">
+                    Tamanho
+                    <input value="M" disabled />
+                  </label>
+                  <label style="margin:0;">
+                    Estoque M
+                    <input class="variant-stock-input" data-size="M" type="number" min="0" value="0" />
+                  </label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+                  <label style="margin:0;">
+                    Tamanho
+                    <input value="G" disabled />
+                  </label>
+                  <label style="margin:0;">
+                    Estoque G
+                    <input class="variant-stock-input" data-size="G" type="number" min="0" value="0" />
+                  </label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
+                  <label style="margin:0;">
+                    Tamanho
+                    <input value="GG" disabled />
+                  </label>
+                  <label style="margin:0;">
+                    Estoque GG
+                    <input class="variant-stock-input" data-size="GG" type="number" min="0" value="0" />
+                  </label>
+                </div>
+              </div>
+              <p class="muted" style="margin:8px 0 0;">
+                O estoque total será a soma automática de P + M + G + GG.
+              </p>
+            </div>
             <div>
               <label>Categorias</label>
               <div id="categoryChecks" class="muted">Carregando categorias...</div>
@@ -402,6 +450,7 @@
 
     const STORAGE_CONTENT = "fanjoy_site_content";
     const STORAGE_THEME = "fanjoy_site_theme";
+    const STORAGE_VARIANTS = "fanjoy_product_variants";
 
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -430,6 +479,52 @@
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
+    }
+
+    function getVariantStore() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_VARIANTS) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveVariantStore(store) {
+      localStorage.setItem(STORAGE_VARIANTS, JSON.stringify(store));
+    }
+
+    function readVariantForm() {
+      const rows = Array.from(document.querySelectorAll(".variant-stock-input"));
+      const variantStock = {};
+      rows.forEach((input) => {
+        const size = input.dataset.size;
+        const value = Number(input.value || 0);
+        variantStock[size] = Math.max(0, Number.isFinite(value) ? value : 0);
+      });
+
+      const sizes = Object.keys(variantStock).filter((size) => variantStock[size] > 0);
+      const total = Object.values(variantStock).reduce((sum, qty) => sum + qty, 0);
+      return { sizes, variantStock, total };
+    }
+
+    function writeVariantForm(data = {}) {
+      const sizes = Array.isArray(data.sizes) ? data.sizes : [];
+      const variantStock = data.variantStock && typeof data.variantStock === "object" ? data.variantStock : {};
+      document.querySelectorAll(".variant-stock-input").forEach((input) => {
+        const size = input.dataset.size;
+        const byStock = Number(variantStock[size]);
+        if (Number.isFinite(byStock)) {
+          input.value = Math.max(0, byStock);
+        } else {
+          input.value = sizes.includes(size) ? 1 : 0;
+        }
+      });
+      syncTotalStockFromVariants();
+    }
+
+    function syncTotalStockFromVariants() {
+      const { total } = readVariantForm();
+      document.getElementById("stock").value = total;
     }
 
     async function loadAll() {
@@ -638,6 +733,7 @@
         document.getElementById(id).value = "";
       });
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => (c.checked = false));
+      writeVariantForm({});
     }
 
     function readFileAsDataURL(file) {
@@ -688,6 +784,13 @@
         c.checked = catIds.has(c.value);
       });
 
+      const variantStore = getVariantStore();
+      const stored = variantStore[p.id];
+      writeVariantForm({
+        sizes: p.sizes || stored?.sizes || [],
+        variantStock: p.variantStock || stored?.variantStock || {}
+      });
+
       switchTab("products");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -713,6 +816,8 @@
         categories: selectedCategories
       };
       payload.image = payload.images[0] || "";
+      const variantData = readVariantForm();
+      payload.stock = variantData.total;
 
       if (!payload.name || payload.price <= 0) {
         setStatus("productStatus", "Preencha nome e preço válido.", false);
@@ -723,6 +828,16 @@
       if (!res.success) {
         setStatus("productStatus", `Erro: ${res.message}`, false);
         return;
+      }
+
+      const finalId = (res.data && (res.data.id || res.data._id)) || id;
+      if (finalId) {
+        const variantStore = getVariantStore();
+        variantStore[finalId] = {
+          sizes: variantData.sizes,
+          variantStock: variantData.variantStock
+        };
+        saveVariantStore(variantStore);
       }
 
       resetProductForm();
@@ -737,6 +852,9 @@
         setStatus("productStatus", `Erro: ${res.message}`, false);
         return;
       }
+      const variantStore = getVariantStore();
+      delete variantStore[id];
+      saveVariantStore(variantStore);
       await loadAll();
       setStatus("productStatus", "Produto excluído com sucesso.");
     }
@@ -889,10 +1007,14 @@
 
     document.getElementById("productSearch").addEventListener("input", renderProducts);
     document.getElementById("imageUploadInput").addEventListener("change", (e) => handleProductImageUpload(e.target.files));
+    document.querySelectorAll(".variant-stock-input").forEach((input) => {
+      input.addEventListener("input", syncTotalStockFromVariants);
+    });
 
     loadAll();
     loadSiteContent();
     loadTheme();
+    writeVariantForm({});
   </script>
 </body>
 </html>
