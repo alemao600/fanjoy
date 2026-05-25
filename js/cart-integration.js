@@ -200,44 +200,53 @@ async function checkout() {
 
   let customer = null;
   const profileResponse = await FanjoyAPI.Customers.getProfile();
-  if (profileResponse.success) {
-    customer = profileResponse.data;
-    sessionStorage.setItem('fanjoy_customer_logged', 'true');
-    sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
-    sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
+  if (!profileResponse.success) {
+    alert('Faça login para finalizar a compra.');
+    window.location.href = 'customer-login.html';
+    return;
   }
+  customer = profileResponse.data;
+  sessionStorage.setItem('fanjoy_customer_logged', 'true');
+  sessionStorage.setItem('fanjoy_customer_id', customer._id || customer.id || '');
+  sessionStorage.setItem('fanjoy_customer_name', customer.name || 'Cliente');
 
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
   const shipping = Number(selectedShipping.price || 0);
   const total = subtotal + shipping;
 
-  let orderId = `guest-${Date.now()}`;
-  if (customer && customer.addresses && customer.addresses.length > 0) {
-    const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
-    const orderResp = await FanjoyAPI.Orders.create({
-      items: cart.map((item) => ({
-        product: item.id,
-        quantity: Number(item.quantity),
-        price: Number(item.price)
-      })),
-      shippingAddress: {
-        street: defaultAddress.street,
-        number: defaultAddress.number,
-        complement: defaultAddress.complement || '',
-        neighborhood: defaultAddress.neighborhood,
-        city: defaultAddress.city,
-        state: defaultAddress.state,
-        cep: defaultAddress.cep
-      },
-      subtotal,
-      shipping,
-      total
-    });
-
-    if (orderResp.success) {
-      orderId = orderResp.data._id || orderResp.data.id || orderId;
-    }
+  if (!customer.addresses || !customer.addresses.length) {
+    alert('Adicione um endereço no seu perfil antes de pagar.');
+    window.location.href = 'customer-profile.html';
+    return;
   }
+
+  const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
+  const orderResp = await FanjoyAPI.Orders.create({
+    items: cart.map((item) => ({
+      product: item.id,
+      quantity: Number(item.quantity),
+      price: Number(item.price)
+    })),
+    shippingAddress: {
+      street: defaultAddress.street,
+      number: defaultAddress.number,
+      complement: defaultAddress.complement || '',
+      neighborhood: defaultAddress.neighborhood,
+      city: defaultAddress.city,
+      state: defaultAddress.state,
+      cep: defaultAddress.cep
+    },
+    subtotal,
+    shipping,
+    total
+  });
+
+  if (!orderResp.success) {
+    alert(`Erro ao criar pedido: ${orderResp.message || 'tente novamente.'}`);
+    return;
+  }
+
+  const orderId = orderResp.data._id || orderResp.data.id;
 
   const baseUrl = window.location.origin;
   const resp = await fetch('/api/create-preference', {

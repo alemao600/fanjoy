@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -185,7 +185,7 @@
 <body>
   <div class="login-container">
     <div class="login-header">
-      <div class="login-logo">🔐</div>
+      <div class="login-logo">�Y"�</div>
       <h1>Admin Login</h1>
       <p>Acesso restrito ao painel administrativo</p>
     </div>
@@ -209,7 +209,7 @@
     </form>
 
     <div class="back-link">
-      <a href="index.html">← Voltar para a loja</a>
+      <a href="index.html">�?� Voltar para a loja</a>
     </div>
   </div>
 
@@ -226,6 +226,7 @@
         // Set session
         sessionStorage.setItem('fanjoy_admin_logged', 'true');
         sessionStorage.setItem('fanjoy_admin_user', username);
+        sessionStorage.setItem('fanjoy_admin_token', 'admin123');
         
         // Redirect to admin panel
         window.location.href = 'admin.html';
@@ -246,3 +247,4 @@
   </script>
 </body>
 </html>
+

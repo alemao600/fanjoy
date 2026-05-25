@@ -226,7 +226,7 @@
   <header>
     <div>
       <h1>Painel Admin Fanjoy</h1>
-      <span class="sub">Gestão completa da loja, conteúdo e visual</span>
+      <span class="sub">Gest�o completa da loja, conte�do e visual</span>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="window.location.href='index.html'">Ver Loja</button>
@@ -239,9 +239,10 @@
       <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="products">Produtos</button>
       <button class="tab-btn" data-tab="categories">Categorias</button>
-      <button class="tab-btn" data-tab="content">Conteúdo do Site</button>
-      <button class="tab-btn" data-tab="theme">Aparência</button>
-      <button class="tab-btn" data-tab="tools">Utilitários</button>
+      <button class="tab-btn" data-tab="orders">Pedidos</button>
+      <button class="tab-btn" data-tab="content">Conte�do do Site</button>
+      <button class="tab-btn" data-tab="theme">Apar�ncia</button>
+      <button class="tab-btn" data-tab="tools">Utilit�rios</button>
     </aside>
 
     <section class="panel content">
@@ -249,7 +250,7 @@
         <div class="stats">
           <div class="stat"><small>Produtos</small><strong id="statProducts">0</strong></div>
           <div class="stat"><small>Categorias</small><strong id="statCategories">0</strong></div>
-          <div class="stat"><small>Preço médio</small><strong id="statAvg">R$ 0</strong></div>
+          <div class="stat"><small>Pre�o m�dio</small><strong id="statAvg">R$ 0</strong></div>
           <div class="stat"><small>Estoque total</small><strong id="statStock">0</strong></div>
         </div>
         <div class="card">
@@ -264,13 +265,13 @@
             <h3 style="margin:0;">Cadastro de Produto</h3>
             <input type="hidden" id="productId" />
             <label>Nome<input id="name" /></label>
-            <label>Descrição<textarea id="description"></textarea></label>
+            <label>Descri��o<textarea id="description"></textarea></label>
             <div class="grid" style="grid-template-columns:1fr 1fr;">
-              <label>Preço (R$)<input id="price" type="number" min="0" step="0.01" /></label>
+              <label>Pre�o (R$)<input id="price" type="number" min="0" step="0.01" /></label>
               <label>Estoque<input id="stock" type="number" min="0" /></label>
             </div>
             <label>Tag<input id="tag" placeholder="Novo, Hot, Promo" /></label>
-            <label>Texto do botão<input id="buttonText" placeholder="Comprar" /></label>
+            <label>Texto do bot�o<input id="buttonText" placeholder="Comprar" /></label>
             <label>Imagens (URL por linha)<textarea id="images" placeholder="https://...\nhttps://..."></textarea></label>
             <div>
               <label>Categorias</label>
@@ -284,11 +285,11 @@
           </div>
 
           <div class="card stack">
-            <h3 style="margin:0;">Catálogo Atual</h3>
-            <label>Buscar produto<input id="productSearch" placeholder="Nome, tag, descrição" /></label>
+            <h3 style="margin:0;">Cat�logo Atual</h3>
+            <label>Buscar produto<input id="productSearch" placeholder="Nome, tag, descri��o" /></label>
             <div style="max-height:550px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px;">
               <table>
-                <thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>
+                <thead><tr><th>Produto</th><th>Pre�o</th><th>Estoque</th><th>A��es</th></tr></thead>
                 <tbody id="productsRows"></tbody>
               </table>
             </div>
@@ -298,13 +299,31 @@
 
       <div id="tab-categories" class="tab stack">
         <div class="card stack">
-          <h3 style="margin:0;">Gestão de Categorias</h3>
+          <h3 style="margin:0;">Gest�o de Categorias</h3>
           <div class="btn-row">
             <input id="newCategory" placeholder="Ex: Camiseta" style="max-width:320px;" />
             <button class="btn btn-primary" onclick="createCategory()">Adicionar</button>
           </div>
           <div id="categoriesList"></div>
           <span class="status" id="categoryStatus"></span>
+        </div>
+      </div>
+
+      <div id="tab-orders" class="tab stack">
+        <div class="card stack">
+          <div class="btn-row" style="justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;">Gestão de Pedidos</h3>
+            <button class="btn btn-secondary" onclick="loadAdminOrders()">Atualizar</button>
+          </div>
+          <div style="max-height:520px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;">
+            <table>
+              <thead>
+                <tr><th>Pedido</th><th>Cliente</th><th>Pagamento</th><th>Total</th><th>Status</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="ordersRows"></tbody>
+            </table>
+          </div>
+          <span class="status" id="ordersStatus"></span>
         </div>
       </div>
 
@@ -315,14 +334,14 @@
             <label>Nome da marca<input id="cfgSiteName" /></label>
             <label>URL do logo<input id="cfgLogoUrl" placeholder="https://..." /></label>
           </div>
-          <label>Título principal (hero)<textarea id="cfgHeroTitle"></textarea></label>
-          <label>Subtítulo principal (hero)<textarea id="cfgHeroSubtitle"></textarea></label>
-          <label>Título do bloco final (CTA)<textarea id="cfgCtaTitle"></textarea></label>
+          <label>T�tulo principal (hero)<textarea id="cfgHeroTitle"></textarea></label>
+          <label>Subt�tulo principal (hero)<textarea id="cfgHeroSubtitle"></textarea></label>
+          <label>T�tulo do bloco final (CTA)<textarea id="cfgCtaTitle"></textarea></label>
           <label>Texto do bloco final (CTA)<textarea id="cfgCtaText"></textarea></label>
-          <label>Texto do botão do CTA<input id="cfgCtaBtn" /></label>
-          <label>Texto do rodapé<textarea id="cfgFooter"></textarea></label>
+          <label>Texto do bot�o do CTA<input id="cfgCtaBtn" /></label>
+          <label>Texto do rodap�<textarea id="cfgFooter"></textarea></label>
           <div class="btn-row">
-            <button class="btn btn-primary" onclick="saveSiteContent()">Salvar Conteúdo</button>
+            <button class="btn btn-primary" onclick="saveSiteContent()">Salvar Conte�do</button>
             <button class="btn btn-secondary" onclick="loadSiteContent()">Recarregar</button>
           </div>
           <span class="status" id="contentStatus"></span>
@@ -331,8 +350,8 @@
 
       <div id="tab-theme" class="tab stack">
         <div class="card stack">
-          <h3 style="margin:0;">Aparência e Cores</h3>
-          <p class="muted">Essas cores alteram o visual da loja sem mexer no código.</p>
+          <h3 style="margin:0;">Apar�ncia e Cores</h3>
+          <p class="muted">Essas cores alteram o visual da loja sem mexer no c�digo.</p>
           <div class="color-grid">
             <label>Cor destaque 1<input id="themeAccent" type="color" value="#ff6bce" /></label>
             <label>Cor destaque 2<input id="themeAccent2" type="color" value="#7c3aed" /></label>
@@ -350,11 +369,11 @@
 
       <div id="tab-tools" class="tab stack">
         <div class="card stack">
-          <h3 style="margin:0;">Utilitários</h3>
-          <p class="muted">Ferramentas para backup e restauração rápida da configuração da loja.</p>
+          <h3 style="margin:0;">Utilit�rios</h3>
+          <p class="muted">Ferramentas para backup e restaura��o r�pida da configura��o da loja.</p>
           <div class="btn-row">
-            <button class="btn btn-success" onclick="exportConfig()">Exportar Configuração (.json)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Importar Configuração</button>
+            <button class="btn btn-success" onclick="exportConfig()">Exportar Configura��o (.json)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Importar Configura��o</button>
             <button class="btn btn-danger" onclick="hardResetConfig()">Resetar Tudo</button>
           </div>
           <input id="importFile" type="file" accept="application/json" style="display:none" />
@@ -374,6 +393,7 @@
 
     let cachedProducts = [];
     let cachedCategories = [];
+    let cachedOrders = [];
 
     const STORAGE_CONTENT = "fanjoy_site_content";
     const STORAGE_THEME = "fanjoy_site_theme";
@@ -415,6 +435,122 @@
       renderCategories();
       renderCategoryChecks();
       updateDashboard();
+      await loadAdminOrders();
+    }
+
+    async function loadAdminOrders() {
+      const rows = document.getElementById("ordersRows");
+      if (!rows) return;
+      rows.innerHTML = `<tr><td colspan="6" class="muted">Carregando pedidos...</td></tr>`;
+      try {
+        const adminToken = sessionStorage.getItem("fanjoy_admin_token") || "admin123";
+        const resp = await fetch("/api/admin-orders", {
+          headers: { "x-admin-token": adminToken }
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          rows.innerHTML = `<tr><td colspan="6" class="muted">Erro: ${data.message || "não foi possível carregar."}</td></tr>`;
+          return;
+        }
+        cachedOrders = data.data.orders || [];
+        renderOrders();
+      } catch (error) {
+        rows.innerHTML = `<tr><td colspan="6" class="muted">Erro: ${error.message}</td></tr>`;
+      }
+    }
+
+    function renderOrders() {
+      const rows = document.getElementById("ordersRows");
+      if (!rows) return;
+      if (!cachedOrders.length) {
+        rows.innerHTML = `<tr><td colspan="6" class="muted">Nenhum pedido ainda.</td></tr>`;
+        return;
+      }
+
+      rows.innerHTML = cachedOrders.map((o) => {
+        const customer = o.customers || {};
+        const address = o.shipping_address || {};
+        const orderItems = o.order_items || [];
+        const itemsPreview = orderItems.map((it) => `${it.products?.name || "Produto"} x${it.quantity}`).join(", ");
+        const currentStatus = o.status || "pending";
+        return `
+          <tr>
+            <td>
+              <strong>${o.order_number || o.id}</strong>
+              <div class="muted">${new Date(o.created_at).toLocaleString("pt-BR")}</div>
+            </td>
+            <td>
+              <div><strong>${customer.name || "Cliente"}</strong></div>
+              <div class="muted">${customer.email || ""}</div>
+              <div class="muted">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
+            </td>
+            <td>
+              <div><strong>${o.payment_status || "pending"}</strong></div>
+              <div class="muted">${itemsPreview || "Itens não encontrados"}</div>
+            </td>
+            <td><strong>R$ ${Number(o.total || 0).toFixed(2)}</strong></td>
+            <td>
+              <select id="orderStatus-${o.id}">
+                <option value="pending" ${currentStatus === "pending" ? "selected" : ""}>Pendente</option>
+                <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Pago</option>
+                <option value="processing" ${currentStatus === "processing" ? "selected" : ""}>Em separação</option>
+                <option value="shipped" ${currentStatus === "shipped" ? "selected" : ""}>Enviado</option>
+                <option value="delivered" ${currentStatus === "delivered" ? "selected" : ""}>Entregue</option>
+                <option value="cancelled" ${currentStatus === "cancelled" ? "selected" : ""}>Cancelado</option>
+              </select>
+              <input id="track-${o.id}" placeholder="Código de rastreio" value="${o.tracking_code || ""}" style="margin-top:6px;" />
+            </td>
+            <td>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveOrderUpdate('${o.id}')">Salvar</button>
+                <button class="btn btn-secondary" onclick="openShippingGuide('${o.id}')">Etiqueta</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function saveOrderUpdate(orderId) {
+      const status = document.getElementById(`orderStatus-${orderId}`)?.value || "pending";
+      const tracking = document.getElementById(`track-${orderId}`)?.value || "";
+      try {
+        const adminToken = sessionStorage.getItem("fanjoy_admin_token") || "admin123";
+        const resp = await fetch("/api/admin-orders", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": adminToken
+          },
+          body: JSON.stringify({
+            id: orderId,
+            status,
+            tracking_code: tracking
+          })
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          setStatus("ordersStatus", `Erro: ${data.message || "falha ao atualizar pedido."}`, false);
+          return;
+        }
+        setStatus("ordersStatus", "Pedido atualizado com sucesso.");
+        await loadAdminOrders();
+      } catch (error) {
+        setStatus("ordersStatus", `Erro: ${error.message}`, false);
+      }
+    }
+
+    function openShippingGuide(orderId) {
+      const order = cachedOrders.find((x) => x.id === orderId);
+      if (!order) return;
+      const address = order.shipping_address || {};
+      alert(
+        "Fluxo de envio:\\n\\n" +
+        `1) Calcule e gere a etiqueta no Melhor Envio para o pedido ${order.order_number}.\\n` +
+        `2) Destino: CEP ${address.cep || "-"}, ${address.city || "-"} / ${address.state || "-"}.\\n` +
+        "3) Pague/imprima etiqueta no Melhor Envio.\\n" +
+        "4) Cole o código de rastreio neste pedido e marque como Enviado."
+      );
     }
 
     function updateDashboard() {
@@ -431,7 +567,7 @@
       document.getElementById("dashboardSummary").textContent =
         totalProducts === 0
           ? "Nenhum produto cadastrado ainda. Comece pela aba Produtos."
-          : `Catálogo com ${totalProducts} produtos em ${totalCategories} categorias.`;
+          : `Cat�logo com ${totalProducts} produtos em ${totalCategories} categorias.`;
     }
 
     function renderCategoryChecks() {
@@ -544,7 +680,7 @@
       payload.image = payload.images[0] || "";
 
       if (!payload.name || payload.price <= 0) {
-        setStatus("productStatus", "Preencha nome e preço válido.", false);
+        setStatus("productStatus", "Preencha nome e pre�o v�lido.", false);
         return;
       }
 
@@ -567,7 +703,7 @@
         return;
       }
       await loadAll();
-      setStatus("productStatus", "Produto excluído com sucesso.");
+      setStatus("productStatus", "Produto exclu�do com sucesso.");
     }
 
     async function createCategory() {
@@ -596,7 +732,7 @@
 
       const stillUsed = cachedProducts.some((p) => (p.categories || []).some((c) => c.name === category.name));
       if (stillUsed) {
-        setStatus("categoryStatus", "Essa categoria está em uso por produtos. Remova dos produtos primeiro.", false);
+        setStatus("categoryStatus", "Essa categoria est� em uso por produtos. Remova dos produtos primeiro.", false);
         return;
       }
 
@@ -612,7 +748,7 @@
       }
 
       await loadAll();
-      setStatus("categoryStatus", "Categoria excluída.");
+      setStatus("categoryStatus", "Categoria exclu�da.");
     }
 
     function loadSiteContent() {
@@ -621,10 +757,10 @@
       document.getElementById("cfgLogoUrl").value = cfg.logoUrl || "";
       document.getElementById("cfgHeroTitle").value = cfg.heroTitle || "Seu fanmade\ndiferente de tudo";
       document.getElementById("cfgHeroSubtitle").value = cfg.heroSubtitle || "Camisetas, canecas, photocards e muito mais.";
-      document.getElementById("cfgCtaTitle").value = cfg.ctaTitle || "Fique por dentro dos próximos drops";
-      document.getElementById("cfgCtaText").value = cfg.ctaText || "Inscreva-se e receba novidades e lançamentos exclusivos";
+      document.getElementById("cfgCtaTitle").value = cfg.ctaTitle || "Fique por dentro dos pr�ximos drops";
+      document.getElementById("cfgCtaText").value = cfg.ctaText || "Inscreva-se e receba novidades e lan�amentos exclusivos";
       document.getElementById("cfgCtaBtn").value = cfg.ctaBtn || "Inscrever agora";
-      document.getElementById("cfgFooter").value = cfg.footerText || "Fanjoy Lab © 2026 — Fanmade store premium";
+      document.getElementById("cfgFooter").value = cfg.footerText || "Fanjoy Lab � 2026 - Fanmade store premium";
     }
 
     function saveSiteContent() {
@@ -639,7 +775,7 @@
         footerText: document.getElementById("cfgFooter").value.trim()
       };
       localStorage.setItem(STORAGE_CONTENT, JSON.stringify(cfg));
-      setStatus("contentStatus", "Conteúdo salvo. Atualize a loja para ver as mudanças.");
+      setStatus("contentStatus", "Conte�do salvo. Atualize a loja para ver as mudan�as.");
     }
 
     function loadTheme() {
@@ -660,7 +796,7 @@
         text: document.getElementById("themeText").value
       };
       localStorage.setItem(STORAGE_THEME, JSON.stringify(theme));
-      setStatus("themeStatus", "Tema salvo. Atualize a loja para ver as mudanças.");
+      setStatus("themeStatus", "Tema salvo. Atualize a loja para ver as mudan�as.");
     }
 
     function resetTheme() {
@@ -681,7 +817,7 @@
       a.download = "fanjoy-config.json";
       a.click();
       URL.revokeObjectURL(a.href);
-      setStatus("toolsStatus", "Configuração exportada.");
+      setStatus("toolsStatus", "Configura��o exportada.");
     }
 
     document.getElementById("importFile").addEventListener("change", async (e) => {
@@ -694,24 +830,25 @@
         if (data.theme) localStorage.setItem(STORAGE_THEME, JSON.stringify(data.theme));
         loadSiteContent();
         loadTheme();
-        setStatus("toolsStatus", "Configuração importada.");
+        setStatus("toolsStatus", "Configura��o importada.");
       } catch {
-        setStatus("toolsStatus", "Arquivo inválido para importação.", false);
+        setStatus("toolsStatus", "Arquivo inv�lido para importa��o.", false);
       }
     });
 
     function hardResetConfig() {
-      if (!confirm("Resetar configurações de conteúdo e tema?")) return;
+      if (!confirm("Resetar configura��es de conte�do e tema?")) return;
       localStorage.removeItem(STORAGE_CONTENT);
       localStorage.removeItem(STORAGE_THEME);
       loadSiteContent();
       loadTheme();
-      setStatus("toolsStatus", "Configurações resetadas.");
+      setStatus("toolsStatus", "Configura��es resetadas.");
     }
 
     function logout() {
       sessionStorage.removeItem("fanjoy_admin_logged");
       sessionStorage.removeItem("fanjoy_admin_user");
+      sessionStorage.removeItem("fanjoy_admin_token");
       window.location.href = "login.html";
     }
 
@@ -723,3 +860,4 @@
   </script>
 </body>
 </html>
+

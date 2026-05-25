@@ -15,6 +15,10 @@
       return res.status(400).json({ success: false, message: "Itens inválidos" });
     }
 
+    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    const webhookUrl = host ? `${proto}://${host}/api/mp-webhook` : undefined;
+
     const payload = {
       items: items.map((item) => ({
         title: item.title,
@@ -29,6 +33,7 @@
         failure: failureUrl,
         pending: pendingUrl
       },
+      notification_url: webhookUrl,
       auto_return: "approved"
     };
 
