@@ -33,9 +33,6 @@
     .ship-row input{flex:1;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-weight:600}
     .ship-row button{border:0;border-radius:10px;background:#111827;color:#fff;padding:10px 12px;cursor:pointer;font-weight:700}
     .ship-status{font-size:12px;color:#6b7280;margin-top:8px;min-height:16px}
-    .ship-options{margin-top:8px;display:flex;flex-direction:column;gap:6px}
-    .ship-option{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #eceff5;border-radius:10px;cursor:pointer}
-    .ship-option strong{margin-left:auto}
     .row{display:flex;justify-content:space-between;margin:8px 0;font-size:14px}
     .total{font-size:24px;font-weight:800;color:var(--accent2);margin-top:8px}
     .btn{width:100%;border:0;border-radius:12px;padding:13px 14px;font-weight:800;cursor:pointer}
@@ -60,7 +57,6 @@
             <button type="button" onclick="calculateShipping()">Calcular</button>
           </div>
           <div id="shippingStatus" class="ship-status"></div>
-          <div id="shippingOptions" class="ship-options"></div>
         </div>
         <div class="row"><span>Subtotal</span><strong id="subtotalValue">R$ 0,00</strong></div>
         <div class="row"><span>Frete</span><strong id="shippingValue">R$ 0,00</strong></div>

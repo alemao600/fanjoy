@@ -127,8 +127,7 @@ async function calculateShipping() {
 
   const cepInput = document.getElementById('shippingCep');
   const statusEl = document.getElementById('shippingStatus');
-  const optionsEl = document.getElementById('shippingOptions');
-  if (!cepInput || !statusEl || !optionsEl) return;
+  if (!cepInput || !statusEl) return;
 
   shippingCep = normalizeCep(cepInput.value);
   cepInput.value = shippingCep;
@@ -139,7 +138,6 @@ async function calculateShipping() {
   }
 
   statusEl.textContent = 'Calculando frete real...';
-  optionsEl.innerHTML = '';
 
   const resp = await fetch('/api/shipping-quote', {
     method: 'POST',
@@ -168,29 +166,15 @@ async function calculateShipping() {
     return;
   }
 
-  statusEl.textContent = 'Escolha uma opção de frete:';
-  optionsEl.innerHTML = options.map((opt, idx) => {
-    const optJson = JSON.stringify(opt).replace(/"/g, '&quot;');
-    return `
-      <label class="ship-option">
-        <input type="radio" name="shippingOption" ${idx === 0 ? 'checked' : ''} onchange="selectShipping('${optJson}')">
-        <span>${escapeHtml(opt.name)} (${escapeHtml(opt.delivery_time || '?')} dias)</span>
-        <strong>R$ ${Number(opt.price || 0).toFixed(2)}</strong>
-      </label>
-    `;
-  }).join('');
-
-  selectedShipping = options[0];
+  selectedShipping = options.reduce((min, opt) => {
+    if (!min) return opt;
+    return Number(opt.price || 0) < Number(min.price || 0) ? opt : min;
+  }, null);
+  statusEl.textContent = selectedShipping
+    ? `Frete calculado: R$ ${Number(selectedShipping.price || 0).toFixed(2)}`
+    : 'Não foi possível calcular o frete.';
   saveShippingState();
   updateCartSummary();
-}
-
-function selectShipping(serializedOption) {
-  try {
-    selectedShipping = JSON.parse(serializedOption);
-    saveShippingState();
-    updateCartSummary();
-  } catch (_) {}
 }
 
 function updateCartSummary() {
