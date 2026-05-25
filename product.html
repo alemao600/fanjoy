@@ -75,25 +75,81 @@
     </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/api.js"></script>
   <script>
     let currentProduct = null;
     let currentImageIndex = 0;
     let currentQty = 1;
     let selectedSize = null;
 
-    function getProducts() {
-      return JSON.parse(localStorage.getItem('fanjoy_products')) || [];
-    }
-
     function getProductIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
       return params.get('id');
     }
 
-    function renderProduct() {
+    function getVariantStoreForProduct(product) {
+      try {
+        const store = JSON.parse(localStorage.getItem("fanjoy_product_variants") || "{}");
+        return store[product.id] || store[product._id] || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function enrichProduct(product) {
+      const output = { ...product };
+      const variantData = getVariantStoreForProduct(output);
+      if (variantData) {
+        if (Array.isArray(variantData.sizes) && variantData.sizes.length) {
+          output.sizes = variantData.sizes;
+        }
+        if (variantData.variantStock && typeof variantData.variantStock === "object") {
+          output.variantStock = variantData.variantStock;
+        }
+      }
+      if (!Array.isArray(output.sizes) || !output.sizes.length) {
+        output.sizes = ["P", "M", "G", "GG"];
+      }
+      const images = Array.isArray(output.images) ? output.images.filter(Boolean) : [];
+      if (images.length < 4 && String(output.name || "").toLowerCase().includes("camiseta bts")) {
+        [
+          "assets/products/camiseta-bts/camiseta.png",
+          "assets/products/camiseta-bts/camisetamodelofrente.png",
+          "assets/products/camiseta-bts/camisetamodelocostas.png",
+          "assets/products/camiseta-bts/tamanhos.png"
+        ].forEach((url) => {
+          if (!images.includes(url)) images.push(url);
+        });
+      }
+      output.images = images.length ? images : [output.image || ""];
+      return output;
+    }
+
+    async function loadProductById(id) {
+      if (window.FanjoyAPI?.Products?.getById) {
+        const response = await window.FanjoyAPI.Products.getById(id);
+        if (response.success && response.data) return response.data;
+      }
+
+      const responseAll = window.FanjoyAPI?.Products?.getAll
+        ? await window.FanjoyAPI.Products.getAll()
+        : { success: false };
+      if (responseAll.success && Array.isArray(responseAll.data?.products)) {
+        return responseAll.data.products.find((p) => String(p.id) === String(id) || String(p._id) === String(id)) || null;
+      }
+      return null;
+    }
+
+    async function renderProduct() {
       const id = getProductIdFromUrl();
-      const products = getProducts();
-      currentProduct = products.find((p) => String(p.id) === String(id) || String(p._id) === String(id));
+      if (!id) {
+        window.location.href = "index.html";
+        return;
+      }
+      const loaded = await loadProductById(id);
+      currentProduct = loaded ? enrichProduct(loaded) : null;
 
       if (!currentProduct) {
         window.location.href = 'index.html';
@@ -111,7 +167,7 @@
         tag.textContent = currentProduct.tag;
       }
 
-      const images = (currentProduct.images && currentProduct.images.length) ? currentProduct.images : [currentProduct.image];
+      const images = currentProduct.images || [currentProduct.image];
       const mainImage = document.getElementById('mainImage');
       mainImage.src = images[0] || '';
 
@@ -172,7 +228,9 @@
       window.location.href = 'cart.html';
     }
 
-    document.addEventListener('DOMContentLoaded', renderProduct);
+    document.addEventListener('DOMContentLoaded', async () => {
+      await renderProduct();
+    });
   </script>
 </body>
 </html>
