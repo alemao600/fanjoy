@@ -96,7 +96,10 @@ function renderOrders(orders) {
 
   list.innerHTML = orders.map((order) => {
     const actionHtml = canResumePayment(order)
-      ? `<div style="margin-top:12px;"><button class="btn-save" type="button" onclick="resumeOrderPayment('${order.id}')">Finalizar pedido</button></div>`
+      ? `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-save" type="button" onclick="resumeOrderPayment('${order.id}')">Finalizar pedido</button>
+          <button class="btn-small btn-delete" type="button" onclick="cancelPendingOrder('${order.id}')">Cancelar pedido</button>
+        </div>`
       : '';
 
     return `
@@ -184,6 +187,30 @@ async function resumeOrderPayment(orderId) {
   }
 
   window.location.href = data.data.init_point;
+}
+
+async function cancelPendingOrder(orderId) {
+  const order = customerOrders.find((o) => String(o.id) === String(orderId));
+  if (!order) {
+    alert('Pedido não encontrado.');
+    return;
+  }
+
+  if (!canResumePayment(order)) {
+    alert('Este pedido não pode mais ser cancelado.');
+    return;
+  }
+
+  if (!confirm('Deseja cancelar este pedido pendente?')) return;
+
+  const response = await FanjoyAPI.Orders.cancelPending(orderId);
+  if (!response.success) {
+    alert(response.message || 'Não foi possível cancelar o pedido.');
+    return;
+  }
+
+  showSuccessMessage('Pedido cancelado com sucesso.');
+  await loadCustomerData();
 }
 
 async function loadCustomerData() {

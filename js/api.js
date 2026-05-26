@@ -687,6 +687,42 @@
       }
     },
 
+    async cancelPending(orderId) {
+      try {
+        const user = await getSessionUser();
+        if (!user) return fail("Não autenticado");
+
+        const customer = await getCustomerProfileByUserId(user.id);
+        if (!customer) return fail("Perfil não encontrado");
+
+        const { data: current, error: getError } = await sb
+          .from("orders")
+          .select("id, status, payment_status")
+          .eq("id", orderId)
+          .eq("customer_id", customer.id)
+          .single();
+
+        if (getError) return fail(getError.message);
+        if (!current) return fail("Pedido não encontrado");
+
+        const status = String(current.status || "").toLowerCase();
+        const paymentStatus = String(current.payment_status || "").toLowerCase();
+        const canCancel = status === "pending" || paymentStatus === "pending" || paymentStatus === "in_process";
+        if (!canCancel) return fail("Este pedido não pode mais ser cancelado.");
+
+        const { error: updateError } = await sb
+          .from("orders")
+          .update({ status: "cancelled", payment_status: "cancelled" })
+          .eq("id", orderId)
+          .eq("customer_id", customer.id);
+
+        if (updateError) return fail(updateError.message);
+        return ok({ cancelled: true });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
     async getById() {
       return fail("Não implementado nesta versão");
     },
