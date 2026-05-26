@@ -171,7 +171,7 @@ async function calculateShipping() {
     return Number(opt.price || 0) < Number(min.price || 0) ? opt : min;
   }, null);
   statusEl.textContent = selectedShipping
-    ? `Frete calculado: R$ ${Number(selectedShipping.price || 0).toFixed(2)}`
+    ? `Frete calculado: R$ ${Number(selectedShipping.price || 0).toFixed(2)} • prazo ${selectedShipping.delivery_time || '-'} dia(s)`
     : 'Não foi possível calcular o frete.';
   saveShippingState();
   updateCartSummary();
@@ -181,9 +181,11 @@ function updateCartSummary() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
   const shipping = selectedShipping ? Number(selectedShipping.price || 0) : 0;
   const total = subtotal + shipping;
+  const eta = selectedShipping?.delivery_time ? `${selectedShipping.delivery_time} dia(s)` : '-';
 
   document.getElementById('subtotalValue').textContent = `R$ ${subtotal.toFixed(2)}`;
   document.getElementById('shippingValue').textContent = selectedShipping ? `R$ ${shipping.toFixed(2)}` : 'Calcule o frete';
+  document.getElementById('shippingEta').textContent = selectedShipping ? eta : '-';
   document.getElementById('totalValue').textContent = `R$ ${total.toFixed(2)}`;
 }
 
