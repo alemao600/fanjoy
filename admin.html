@@ -269,6 +269,27 @@
           <div class="stat"><small>Preço médio</small><strong id="statAvg">R$ 0</strong></div>
           <div class="stat"><small>Estoque total</small><strong id="statStock">0</strong></div>
         </div>
+        <div class="stats">
+          <div class="stat"><small>Pedidos totais</small><strong id="statOrders">0</strong></div>
+          <div class="stat"><small>Faturamento</small><strong id="statRevenue">R$ 0</strong></div>
+          <div class="stat"><small>Ticket médio</small><strong id="statTicket">R$ 0</strong></div>
+          <div class="stat"><small>Pedidos enviados</small><strong id="statShipped">0</strong></div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3 style="margin:0 0 10px;">Painel de Pedidos</h3>
+            <div class="stats" style="grid-template-columns:repeat(2,minmax(120px,1fr));">
+              <div class="stat"><small>Pendentes</small><strong id="statPending">0</strong></div>
+              <div class="stat"><small>Pagos</small><strong id="statPaid">0</strong></div>
+              <div class="stat"><small>Entregues</small><strong id="statDelivered">0</strong></div>
+              <div class="stat"><small>Cancelados</small><strong id="statCancelled">0</strong></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 10px;">Produtos Mais Vendidos</h3>
+            <div id="topProducts" class="muted">Sem vendas ainda.</div>
+          </div>
+        </div>
         <div class="card">
           <h3 style="margin:0 0 8px;">Resumo</h3>
           <p class="muted" id="dashboardSummary">Carregando dados...</p>
@@ -584,6 +605,7 @@
         }
         cachedOrders = data.data.orders || [];
         renderOrders();
+        updateDashboard();
       } catch (error) {
         rows.innerHTML = `<tr><td colspan="6" class="muted">Erro: ${error.message}</td></tr>`;
       }
@@ -704,16 +726,53 @@
       const totalCategories = cachedCategories.length;
       const avg = totalProducts ? cachedProducts.reduce((s, p) => s + Number(p.price || 0), 0) / totalProducts : 0;
       const stock = cachedProducts.reduce((s, p) => s + Number(p.stock || 0), 0);
+      const orders = cachedOrders || [];
+      const totalOrders = orders.length;
+      const revenue = orders
+        .filter((o) => !["cancelled", "failed"].includes(String(o.status || "").toLowerCase()))
+        .reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const ticket = totalOrders ? revenue / totalOrders : 0;
+
+      const byStatus = orders.reduce((acc, o) => {
+        const status = String(o.status || "pending").toLowerCase();
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const soldProducts = {};
+      orders.forEach((o) => {
+        (o.order_items || []).forEach((it) => {
+          const name = it.products?.name || "Produto";
+          soldProducts[name] = (soldProducts[name] || 0) + Number(it.quantity || 0);
+        });
+      });
+      const topProducts = Object.entries(soldProducts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
 
       document.getElementById("statProducts").textContent = totalProducts;
       document.getElementById("statCategories").textContent = totalCategories;
       document.getElementById("statAvg").textContent = `R$ ${avg.toFixed(2)}`;
       document.getElementById("statStock").textContent = stock;
+      document.getElementById("statOrders").textContent = totalOrders;
+      document.getElementById("statRevenue").textContent = `R$ ${revenue.toFixed(2)}`;
+      document.getElementById("statTicket").textContent = `R$ ${ticket.toFixed(2)}`;
+      document.getElementById("statShipped").textContent = byStatus.shipped || 0;
+      document.getElementById("statPending").textContent = byStatus.pending || 0;
+      document.getElementById("statPaid").textContent = byStatus.paid || 0;
+      document.getElementById("statDelivered").textContent = byStatus.delivered || 0;
+      document.getElementById("statCancelled").textContent = byStatus.cancelled || 0;
+      const topProductsEl = document.getElementById("topProducts");
+      if (topProductsEl) {
+        topProductsEl.innerHTML = topProducts.length
+          ? topProducts.map(([name, qty], i) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:${i === topProducts.length - 1 ? "0" : "1px solid #e5e7eb"};"><span>${name}</span><strong>${qty} un.</strong></div>`).join("")
+          : '<span class="muted">Sem vendas ainda.</span>';
+      }
 
       document.getElementById("dashboardSummary").textContent =
         totalProducts === 0
           ? "Nenhum produto cadastrado ainda. Comece pela aba Produtos."
-          : `Catálogo com ${totalProducts} produtos em ${totalCategories} categorias.`;
+          : `Catálogo com ${totalProducts} produtos em ${totalCategories} categorias. Total de ${totalOrders} pedidos e faturamento de R$ ${revenue.toFixed(2)}.`;
     }
 
     function renderCategoryChecks() {
