@@ -409,6 +409,30 @@
             <h3 style="margin:0;">Gestão de Pedidos</h3>
             <button class="btn btn-secondary" onclick="loadAdminOrders()">Atualizar</button>
           </div>
+          <div class="btn-row" style="align-items:end;">
+            <label style="min-width:220px;flex:1;">Buscar pedido/cliente/contato
+              <input id="ordersSearch" placeholder="Pedido, nome, e-mail, telefone, CEP..." />
+            </label>
+            <label style="min-width:190px;">Status do pedido
+              <select id="ordersStatusFilter">
+                <option value="">Todos</option>
+                <option value="pending">Pendentes</option>
+                <option value="paid">Pagos</option>
+                <option value="processing">Em separação</option>
+                <option value="shipped">Enviados</option>
+                <option value="delivered">Entregues</option>
+                <option value="cancelled">Cancelados</option>
+              </select>
+            </label>
+            <label style="min-width:210px;">Situação operacional
+              <select id="ordersFlowFilter">
+                <option value="">Todas</option>
+                <option value="to_ship">Pago e falta enviar</option>
+                <option value="need_label">Falta gerar etiqueta</option>
+                <option value="with_tracking">Com rastreio</option>
+              </select>
+            </label>
+          </div>
           <div style="max-height:520px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;">
             <table>
               <thead>
@@ -416,6 +440,13 @@
               </thead>
               <tbody id="ordersRows"></tbody>
             </table>
+          </div>
+          <div class="btn-row" style="justify-content:space-between;align-items:center;">
+            <span id="ordersPaginationInfo" class="muted">0 pedidos</span>
+            <div class="btn-row">
+              <button id="ordersPrevBtn" class="btn btn-secondary" type="button">Anterior</button>
+              <button id="ordersNextBtn" class="btn btn-secondary" type="button">Próxima</button>
+            </div>
           </div>
           <span class="status" id="ordersStatus"></span>
         </div>
@@ -488,6 +519,9 @@
     let cachedProducts = [];
     let cachedCategories = [];
     let cachedOrders = [];
+    let filteredOrders = [];
+    let ordersPage = 1;
+    const ordersPageSize = 12;
 
     const STORAGE_CONTENT = "fanjoy_site_content";
     const STORAGE_THEME = "fanjoy_site_theme";
@@ -615,11 +649,62 @@
       }
     }
 
+    function matchesOrderFlow(order, flowFilter) {
+      const status = String(order?.status || "").toLowerCase();
+      const payment = String(order?.payment_status || "").toLowerCase();
+      const tracking = String(order?.tracking_code || "").trim();
+      if (!flowFilter) return true;
+      if (flowFilter === "to_ship") {
+        const paid = payment === "approved" || payment === "paid" || status === "paid" || status === "processing";
+        const shipped = status === "shipped" || status === "delivered";
+        return paid && !shipped;
+      }
+      if (flowFilter === "need_label") {
+        const paid = payment === "approved" || payment === "paid" || status === "paid" || status === "processing";
+        return paid && !tracking;
+      }
+      if (flowFilter === "with_tracking") return !!tracking;
+      return true;
+    }
+
+    function applyOrdersFilters() {
+      const search = (document.getElementById("ordersSearch")?.value || "").toLowerCase().trim();
+      const statusFilter = (document.getElementById("ordersStatusFilter")?.value || "").toLowerCase();
+      const flowFilter = (document.getElementById("ordersFlowFilter")?.value || "").toLowerCase();
+
+      filteredOrders = (cachedOrders || []).filter((o) => {
+        const status = String(o.status || "").toLowerCase();
+        const customer = o.customers || {};
+        const address = o.shipping_address || {};
+        const haystack = [
+          o.order_number || "",
+          customer.name || "",
+          customer.email || "",
+          customer.phone || "",
+          address.cep || "",
+          address.city || "",
+          address.state || ""
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = !search || haystack.includes(search);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        const matchesFlow = matchesOrderFlow(o, flowFilter);
+        return matchesSearch && matchesStatus && matchesFlow;
+      });
+
+      ordersPage = 1;
+      renderOrders();
+    }
+
     function renderOrders() {
       const rows = document.getElementById("ordersRows");
       if (!rows) return;
-      if (!cachedOrders.length) {
+      const source = filteredOrders.length || (document.getElementById("ordersSearch")?.value || document.getElementById("ordersStatusFilter")?.value || document.getElementById("ordersFlowFilter")?.value)
+        ? filteredOrders
+        : cachedOrders;
+      if (!source.length) {
         rows.innerHTML = `<tr><td colspan="6" class="muted">Nenhum pedido ainda.</td></tr>`;
+        updateOrdersPagination(0, 0, 0);
         return;
       }
 
@@ -639,7 +724,13 @@
         return map[String(value || "").toLowerCase()] || "Pendente";
       };
 
-      rows.innerHTML = cachedOrders.map((o) => {
+      const total = source.length;
+      const totalPages = Math.max(1, Math.ceil(total / ordersPageSize));
+      if (ordersPage > totalPages) ordersPage = totalPages;
+      const start = (ordersPage - 1) * ordersPageSize;
+      const pageOrders = source.slice(start, start + ordersPageSize);
+
+      rows.innerHTML = pageOrders.map((o) => {
         const customer = o.customers || {};
         const address = o.shipping_address || {};
         const orderItems = o.order_items || [];
@@ -654,6 +745,7 @@
             <td>
               <div><strong>${customer.name || "Cliente"}</strong></div>
               <div class="muted">${customer.email || ""}</div>
+              <div class="muted">${customer.phone || "Sem telefone"}</div>
               <div class="muted">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
             </td>
             <td>
@@ -681,6 +773,16 @@
           </tr>
         `;
       }).join("");
+      updateOrdersPagination(total, ordersPage, totalPages);
+    }
+
+    function updateOrdersPagination(total, page, totalPages) {
+      const info = document.getElementById("ordersPaginationInfo");
+      const prev = document.getElementById("ordersPrevBtn");
+      const next = document.getElementById("ordersNextBtn");
+      if (info) info.textContent = `${total} pedido(s) • página ${page || 0} de ${totalPages || 0}`;
+      if (prev) prev.disabled = page <= 1;
+      if (next) next.disabled = page >= totalPages;
     }
 
     async function saveOrderUpdate(orderId) {
@@ -1138,6 +1240,19 @@
     }
 
     document.getElementById("productSearch").addEventListener("input", renderProducts);
+    document.getElementById("ordersSearch").addEventListener("input", applyOrdersFilters);
+    document.getElementById("ordersStatusFilter").addEventListener("change", applyOrdersFilters);
+    document.getElementById("ordersFlowFilter").addEventListener("change", applyOrdersFilters);
+    document.getElementById("ordersPrevBtn").addEventListener("click", () => {
+      if (ordersPage > 1) {
+        ordersPage -= 1;
+        renderOrders();
+      }
+    });
+    document.getElementById("ordersNextBtn").addEventListener("click", () => {
+      ordersPage += 1;
+      renderOrders();
+    });
     document.getElementById("imageUploadInput").addEventListener("change", (e) => handleProductImageUpload(e.target.files));
     document.querySelectorAll(".variant-stock-input").forEach((input) => {
       input.addEventListener("input", syncTotalStockFromVariants);
