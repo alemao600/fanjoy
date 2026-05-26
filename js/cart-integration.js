@@ -206,8 +206,10 @@ async function checkout() {
     profileResponse = await FanjoyAPI.Customers.getProfile();
   }
   if (!profileResponse.success) {
+    sessionStorage.setItem('fanjoy_checkout_redirect', 'true');
+    sessionStorage.setItem('fanjoy_after_login_redirect', 'cart.html');
     alert('Faça login para finalizar a compra.');
-    window.location.href = 'customer-login.html';
+    window.location.href = 'customer-login.html?next=cart.html';
     return;
   }
   customer = profileResponse.data;

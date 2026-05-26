@@ -657,7 +657,7 @@
 
         const { data: orders, error } = await sb
           .from("orders")
-          .select("id, order_number, status, total, tracking_code, created_at")
+          .select("id, order_number, status, payment_status, subtotal, shipping, total, tracking_code, created_at")
           .eq("customer_id", customer.id)
           .order("created_at", { ascending: false });
 
@@ -671,6 +671,9 @@
             id: order.id,
             orderNumber: order.order_number,
             status: order.status,
+            paymentStatus: order.payment_status,
+            subtotal: Number(order.subtotal || 0),
+            shipping: Number(order.shipping || 0),
             total: Number(order.total || 0),
             trackingCode: order.tracking_code,
             createdAt: order.created_at,

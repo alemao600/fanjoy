@@ -1,5 +1,6 @@
 ﻿let currentCustomer = null;
 let editingAddressId = null;
+let customerOrders = [];
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((btn) => btn.classList.remove('active'));
@@ -24,6 +25,31 @@ function showSuccessMessage(message = 'Informações salvas com sucesso!') {
   msg.textContent = message;
   msg.classList.add('show');
   setTimeout(() => msg.classList.remove('show'), 2500);
+}
+
+function getStatusLabel(status) {
+  const map = {
+    pending: 'Pendente',
+    paid: 'Pago',
+    processing: 'Em separação',
+    shipped: 'Enviado',
+    delivered: 'Entregue',
+    cancelled: 'Cancelado'
+  };
+  return map[String(status || '').toLowerCase()] || 'Pendente';
+}
+
+function getStatusClass(status) {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'paid') return 'confirmed';
+  if (normalized === 'processing') return 'confirmed';
+  return normalized || 'pending';
+}
+
+function canResumePayment(order) {
+  const status = String(order?.status || '').toLowerCase();
+  const payment = String(order?.paymentStatus || '').toLowerCase();
+  return status === 'pending' || payment === 'pending' || payment === 'in_process';
 }
 
 function renderPersonalData() {
@@ -68,14 +94,19 @@ function renderOrders(orders) {
     return;
   }
 
-  list.innerHTML = orders.map((order) => `
+  list.innerHTML = orders.map((order) => {
+    const actionHtml = canResumePayment(order)
+      ? `<div style="margin-top:12px;"><button class="btn-save" type="button" onclick="resumeOrderPayment('${order.id}')">Finalizar pedido</button></div>`
+      : '';
+
+    return `
     <div class="order-card">
       <div class="order-header">
         <div>
           <div class="order-id">Pedido #${order.orderNumber || String(order._id || '').slice(-8)}</div>
           <div class="order-date">${FanjoyAPI.Utils.formatDate(order.createdAt)}</div>
         </div>
-        <div class="order-status status-${order.status || 'pending'}">${order.status || 'pending'}</div>
+        <div class="order-status status-${getStatusClass(order.status)}">${getStatusLabel(order.status)}</div>
       </div>
       <div class="order-items">
         ${(order.items || []).map((item) => `
@@ -88,8 +119,71 @@ function renderOrders(orders) {
         `).join('')}
       </div>
       <div class="order-total">Total: ${FanjoyAPI.Utils.formatCurrency(order.total || 0)}</div>
+      ${actionHtml}
     </div>
-  `).join('');
+  `;
+  }).join('');
+}
+
+async function resumeOrderPayment(orderId) {
+  const order = customerOrders.find((o) => String(o.id) === String(orderId));
+  if (!order) {
+    alert('Pedido não encontrado.');
+    return;
+  }
+
+  const itemsTotal = (order.items || []).reduce((sum, item) => {
+    return sum + Number(item.price || 0) * Number(item.quantity || 0);
+  }, 0);
+  const shipping = Number(order.shipping || Math.max(0, Number(order.total || 0) - itemsTotal));
+
+  const payerAddress = (currentCustomer?.addresses || []).find((a) => a.isDefault) || (currentCustomer?.addresses || [])[0] || {};
+  const fullName = `${currentCustomer?.name || ''} ${currentCustomer?.lastName || ''}`.trim();
+  const baseUrl = window.location.origin;
+
+  const resp = await fetch('/api/create-preference', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      orderId: order.id,
+      customerEmail: currentCustomer?.email || null,
+      successUrl: `${baseUrl}/customer-profile.html?payment=success`,
+      failureUrl: `${baseUrl}/customer-profile.html?payment=failure`,
+      pendingUrl: `${baseUrl}/customer-profile.html?payment=pending`,
+      items: [
+        ...(order.items || []).map((item) => ({
+          title: item.product?.name || 'Produto',
+          quantity: Number(item.quantity || 1),
+          unit_price: Number(item.price || 0)
+        })),
+        ...(shipping > 0 ? [{ title: 'Frete', quantity: 1, unit_price: shipping }] : [])
+      ],
+      payer: {
+        email: currentCustomer?.email || null,
+        first_name: currentCustomer?.name || null,
+        last_name: currentCustomer?.lastName || null,
+        full_name: fullName || null,
+        phone: currentCustomer?.phone || null,
+        cpf: currentCustomer?.cpf || null,
+        address: {
+          zip_code: String(payerAddress.cep || '').replace(/\D/g, ''),
+          street_name: payerAddress.street || null,
+          street_number: String(payerAddress.number || ''),
+          neighborhood: payerAddress.neighborhood || null,
+          city: payerAddress.city || null,
+          federal_unit: payerAddress.state || null
+        }
+      }
+    })
+  });
+
+  const data = await resp.json();
+  if (!resp.ok || !data.success) {
+    alert(data.message || 'Erro ao iniciar pagamento.');
+    return;
+  }
+
+  window.location.href = data.data.init_point;
 }
 
 async function loadCustomerData() {
@@ -105,7 +199,8 @@ async function loadCustomerData() {
   renderAddresses();
 
   const ordersResp = await FanjoyAPI.Orders.getMyOrders();
-  renderOrders(ordersResp.success ? (ordersResp.data.orders || []) : []);
+  customerOrders = ordersResp.success ? (ordersResp.data.orders || []) : [];
+  renderOrders(customerOrders);
 }
 
 async function saveProfile(e) {

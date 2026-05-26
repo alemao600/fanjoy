@@ -597,6 +597,22 @@
         return;
       }
 
+      const statusLabel = (value) => {
+        const map = {
+          pending: "Pendente",
+          paid: "Pago",
+          processing: "Em separação",
+          shipped: "Enviado",
+          delivered: "Entregue",
+          cancelled: "Cancelado",
+          approved: "Aprovado",
+          rejected: "Recusado",
+          failed: "Falhou",
+          in_process: "Em análise"
+        };
+        return map[String(value || "").toLowerCase()] || "Pendente";
+      };
+
       rows.innerHTML = cachedOrders.map((o) => {
         const customer = o.customers || {};
         const address = o.shipping_address || {};
@@ -615,7 +631,7 @@
               <div class="muted">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
             </td>
             <td>
-              <div><strong>${o.payment_status || "pending"}</strong></div>
+              <div><strong>${statusLabel(o.payment_status || "pending")}</strong></div>
               <div class="muted">${itemsPreview || "Itens não encontrados"}</div>
             </td>
             <td><strong>R$ ${Number(o.total || 0).toFixed(2)}</strong></td>

@@ -1,37 +1,34 @@
-// ========================================
-// CUSTOMER-LOGIN.HTML - Integração com API
+﻿// ========================================
+// CUSTOMER-LOGIN.HTML - Integracao com API
 // ========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Verificar se já está logado
   if (FanjoyAPI.Auth.isAuthenticated && FanjoyAPI.Auth.isAuthenticated()) {
-    window.location.href = 'customer-profile.html';
+    window.location.href = getPostLoginRedirectUrl();
+    return;
   }
 
   setupForms();
 });
 
-// ========================================
-// Configurar Formulários
-// ========================================
-
 function setupForms() {
-  // Formulário de Login
   const loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleLogin);
-  }
+  if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
-  // Formulário de Registro
   const registerForm = document.getElementById('registerForm');
-  if (registerForm) {
-    registerForm.addEventListener('submit', handleRegister);
-  }
+  if (registerForm) registerForm.addEventListener('submit', handleRegister);
 }
 
-// ========================================
-// Login (Integração com API)
-// ========================================
+function getPostLoginRedirectUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const nextQuery = params.get('next');
+  const nextSession = sessionStorage.getItem('fanjoy_after_login_redirect');
+  const isCheckoutRedirect = sessionStorage.getItem('fanjoy_checkout_redirect') === 'true';
+  const next = nextQuery || nextSession;
+  if (next) return next;
+  if (isCheckoutRedirect) return 'cart.html';
+  return 'customer-profile.html';
+}
 
 async function handleLogin(e) {
   e.preventDefault();
@@ -47,39 +44,25 @@ async function handleLogin(e) {
   try {
     let response = await FanjoyAPI.Auth.login({ email, password });
 
-    // Legacy migration fallback:
-    // If old local account existed before Supabase migration, try creating
-    // a Supabase account automatically and login again.
-    if (!response.success && /invalid login credentials/i.test(String(response.message || ""))) {
+    if (!response.success && /invalid login credentials/i.test(String(response.message || ''))) {
       const migrated = await tryAutoMigrateLegacyAccount(email, password);
-      if (migrated) {
-        response = await FanjoyAPI.Auth.login({ email, password });
-      }
+      if (migrated) response = await FanjoyAPI.Auth.login({ email, password });
     }
 
     if (response.success) {
       const customer = response.data.customer;
-      
-      // Salvar dados do cliente
       sessionStorage.setItem('fanjoy_customer_logged', 'true');
       sessionStorage.setItem('fanjoy_customer_id', customer._id);
       sessionStorage.setItem('fanjoy_customer_name', customer.name);
 
       showMessage('loginSuccess', 'Login realizado com sucesso!');
 
-      // Redirecionar
       setTimeout(() => {
-        // Verificar se veio do checkout
-        const isCheckoutRedirect = sessionStorage.getItem('fanjoy_checkout_redirect') === 'true';
-        
-        if (isCheckoutRedirect) {
-          // Voltar para o carrinho
-          window.location.href = 'cart.html';
-        } else {
-          // Ir para o perfil
-          window.location.href = 'customer-profile.html';
-        }
-      }, 1000);
+        const redirectUrl = getPostLoginRedirectUrl();
+        sessionStorage.removeItem('fanjoy_after_login_redirect');
+        sessionStorage.removeItem('fanjoy_checkout_redirect');
+        window.location.href = redirectUrl;
+      }, 600);
     } else {
       showMessage('loginError', response.message || 'Erro ao fazer login');
     }
@@ -91,12 +74,12 @@ async function handleLogin(e) {
 
 async function tryAutoMigrateLegacyAccount(email, password) {
   try {
-    const legacy = JSON.parse(localStorage.getItem("fanjoy_customers") || "[]");
-    const match = legacy.find((c) => String(c.email || "").toLowerCase() === String(email || "").toLowerCase());
+    const legacy = JSON.parse(localStorage.getItem('fanjoy_customers') || '[]');
+    const match = legacy.find((c) => String(c.email || '').toLowerCase() === String(email || '').toLowerCase());
 
-    const guessedName = match?.name || String(email || "").split("@")[0] || "Cliente";
-    const guessedLastName = match?.lastName || "";
-    const guessedPhone = match?.phone || "";
+    const guessedName = match?.name || String(email || '').split('@')[0] || 'Cliente';
+    const guessedLastName = match?.lastName || '';
+    const guessedPhone = match?.phone || '';
 
     const reg = await FanjoyAPI.Auth.register({
       name: guessedName,
@@ -106,23 +89,12 @@ async function tryAutoMigrateLegacyAccount(email, password) {
       password
     });
 
-    // success OR user already exists (but with stale session) should allow retry login
     if (reg.success) return true;
-
-    // Some Supabase projects return generic messages; allow a retry path
-    // when account might already exist.
-    if (/already registered|already exists|email/i.test(String(reg.message || ""))) {
-      return true;
-    }
-    return false;
+    return /already registered|already exists|email/i.test(String(reg.message || ''));
   } catch {
     return false;
   }
 }
-
-// ========================================
-// Registro (Integração com API)
-// ========================================
 
 async function handleRegister(e) {
   e.preventDefault();
@@ -134,52 +106,40 @@ async function handleRegister(e) {
   const password = document.getElementById('registerPassword').value;
   const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-  // Validações
   if (!name || !lastName || !email || !phone || !password || !confirmPassword) {
     showMessage('registerError', 'Por favor, preencha todos os campos');
     return;
   }
 
   if (!FanjoyAPI.Utils.validateEmail(email)) {
-    showMessage('registerError', 'E-mail inválido');
+    showMessage('registerError', 'E-mail invalido');
     return;
   }
 
   if (password.length < 6) {
-    showMessage('registerError', 'A senha deve ter no mínimo 6 caracteres');
+    showMessage('registerError', 'A senha deve ter no minimo 6 caracteres');
     return;
   }
 
   if (password !== confirmPassword) {
-    showMessage('registerError', 'As senhas não coincidem');
+    showMessage('registerError', 'As senhas nao coincidem');
     return;
   }
 
   try {
-    const userData = {
-      name,
-      lastName,
-      email,
-      phone,
-      password
-    };
-
-    const response = await FanjoyAPI.Auth.register(userData);
+    const response = await FanjoyAPI.Auth.register({ name, lastName, email, phone, password });
 
     if (response.success) {
-      showMessage('registerSuccess', 'Conta criada com sucesso! Faça login para continuar.');
-
-      // Resetar formulário
+      showMessage('registerSuccess', 'Conta criada com sucesso! Faca login para continuar.');
       document.getElementById('registerForm').reset();
 
-      // Trocar para aba de login após 2 segundos
       setTimeout(() => {
         document.querySelector('.tab-btn:first-child').click();
         document.getElementById('loginEmail').value = email;
-      }, 2000);
+      }, 1200);
     } else {
-      if (/already|exists|cadastrado|registered|email/i.test(String(response.message || ""))) {
-        showMessage('registerError', 'E-mail já cadastrado. Use a aba Entrar para fazer login.');
+      if (/already|exists|cadastrado|registered|email/i.test(String(response.message || ''))) {
+        showMessage('registerError', 'E-mail ja cadastrado. Use a aba Entrar para fazer login.');
       } else {
         showMessage('registerError', response.message || 'Erro ao criar conta');
       }
@@ -189,10 +149,6 @@ async function handleRegister(e) {
     showMessage('registerError', error.message || 'Erro ao criar conta. Tente novamente.');
   }
 }
-
-// ========================================
-// Mensagens
-// ========================================
 
 function showMessage(elementId, message) {
   const messageElement = document.getElementById(elementId);
@@ -205,10 +161,6 @@ function showMessage(elementId, message) {
     messageElement.classList.remove('show');
   }, 5000);
 }
-
-// ========================================
-// Máscaras de Telefone
-// ========================================
 
 document.getElementById('registerPhone')?.addEventListener('input', (e) => {
   e.target.value = FanjoyAPI.Utils.maskPhone(e.target.value);
