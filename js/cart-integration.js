@@ -110,10 +110,10 @@ function getProductsForShipping() {
   const totalQty = cart.reduce((sum, item) => sum + Number(item.quantity || 1), 0) || 1;
   return [{
     id: 'camiseta-bts',
-    width: 20,
+    width: 25,
     height: 3,
-    length: 28,
-    weight: 0.25,
+    length: 30,
+    weight: 0.3,
     insurance_value: cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity || 1), 0),
     quantity: totalQty
   }];

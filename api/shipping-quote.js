@@ -33,10 +33,10 @@
       to: { postal_code: toPostalCode },
       products: products.map((p) => ({
         id: String(p.id || 'item'),
-        width: Number(p.width || 20),
+        width: Number(p.width || 25),
         height: Number(p.height || 3),
-        length: Number(p.length || 28),
-        weight: Number(p.weight || 0.25),
+        length: Number(p.length || 30),
+        weight: Number(p.weight || 0.3),
         insurance_value: Number(p.insurance_value || 0),
         quantity: Number(p.quantity || 1)
       }))
