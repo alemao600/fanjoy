@@ -291,6 +291,10 @@
           </div>
         </div>
         <div class="card">
+          <h3 style="margin:0 0 10px;">Controle de Estoque</h3>
+          <div id="stockByProduct" class="muted">Sem produtos cadastrados.</div>
+        </div>
+        <div class="card">
           <h3 style="margin:0 0 8px;">Resumo</h3>
           <p class="muted" id="dashboardSummary">Carregando dados...</p>
         </div>
@@ -767,6 +771,21 @@
         topProductsEl.innerHTML = topProducts.length
           ? topProducts.map(([name, qty], i) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:${i === topProducts.length - 1 ? "0" : "1px solid #e5e7eb"};"><span>${name}</span><strong>${qty} un.</strong></div>`).join("")
           : '<span class="muted">Sem vendas ainda.</span>';
+      }
+      const stockByProductEl = document.getElementById("stockByProduct");
+      if (stockByProductEl) {
+        const stockRows = [...cachedProducts]
+          .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0));
+        stockByProductEl.innerHTML = stockRows.length
+          ? stockRows.map((p, i) => {
+              const qty = Number(p.stock || 0);
+              const low = qty <= 5;
+              return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:${i === stockRows.length - 1 ? "0" : "1px solid #e5e7eb"};">
+                <span>${p.name || "Produto"}</span>
+                <strong style="color:${low ? "#b91c1c" : "#111827"};">${qty} un.${low ? " • baixo" : ""}</strong>
+              </div>`;
+            }).join("")
+          : '<span class="muted">Sem produtos cadastrados.</span>';
       }
 
       document.getElementById("dashboardSummary").textContent =
