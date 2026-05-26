@@ -866,6 +866,12 @@
                 <div class="order-modern-sub">${customer.email || ""}</div>
                 <div class="order-modern-sub">${customer.phone || "Sem telefone"}</div>
                 <div class="order-modern-sub">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
+                <div class="order-modern-sub">
+                  ${address.street || "Rua não informada"}, ${address.number || "s/n"}${address.complement ? ` - ${address.complement}` : ""}
+                </div>
+                <div class="order-modern-sub">
+                  ${address.neighborhood || "Bairro não informado"}
+                </div>
               </div>
               <div>
                 <div class="order-modern-sub">Pagamento</div>
