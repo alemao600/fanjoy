@@ -45,7 +45,17 @@ async function handleLogin(e) {
   }
 
   try {
-    const response = await FanjoyAPI.Auth.login({ email, password });
+    let response = await FanjoyAPI.Auth.login({ email, password });
+
+    // Legacy migration fallback:
+    // If old local account existed before Supabase migration, try creating
+    // a Supabase account automatically and login again.
+    if (!response.success && /invalid login credentials/i.test(String(response.message || ""))) {
+      const migrated = await tryAutoMigrateLegacyAccount(email, password);
+      if (migrated) {
+        response = await FanjoyAPI.Auth.login({ email, password });
+      }
+    }
 
     if (response.success) {
       const customer = response.data.customer;
@@ -76,6 +86,37 @@ async function handleLogin(e) {
   } catch (error) {
     console.error('Erro no login:', error);
     showMessage('loginError', error.message || 'Erro ao fazer login. Tente novamente.');
+  }
+}
+
+async function tryAutoMigrateLegacyAccount(email, password) {
+  try {
+    const legacy = JSON.parse(localStorage.getItem("fanjoy_customers") || "[]");
+    const match = legacy.find((c) => String(c.email || "").toLowerCase() === String(email || "").toLowerCase());
+
+    const guessedName = match?.name || String(email || "").split("@")[0] || "Cliente";
+    const guessedLastName = match?.lastName || "";
+    const guessedPhone = match?.phone || "";
+
+    const reg = await FanjoyAPI.Auth.register({
+      name: guessedName,
+      lastName: guessedLastName,
+      email,
+      phone: guessedPhone,
+      password
+    });
+
+    // success OR user already exists (but with stale session) should allow retry login
+    if (reg.success) return true;
+
+    // Some Supabase projects return generic messages; allow a retry path
+    // when account might already exist.
+    if (/already registered|already exists|email/i.test(String(reg.message || ""))) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
 
