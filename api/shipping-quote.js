@@ -65,14 +65,21 @@
 
     const options = (Array.isArray(data) ? data : [])
       .filter((item) => !item.error)
-      .map((item) => ({
-        id: item.id,
-        name: item.name || item.company?.name || 'Frete',
-        // Usa o preço base da cotação para bater com o painel do Melhor Envio.
-        price: Number(item.price || item.custom_price || 0),
-        delivery_time: item.custom_delivery_time || item.delivery_time || null,
-        company: item.company?.name || null
-      }))
+      .map((item) => {
+        const basePrice = Number(item.price || 0);
+        const customPrice = Number(item.custom_price || 0);
+        const validPrices = [basePrice, customPrice].filter((v) => Number.isFinite(v) && v > 0);
+        const effectivePrice = validPrices.length ? Math.min(...validPrices) : 0;
+
+        return {
+          id: item.id,
+          name: item.name || item.company?.name || 'Frete',
+          // Usa sempre o menor preço retornado na cotação para bater com o “mais barato”.
+          price: effectivePrice,
+          delivery_time: item.custom_delivery_time || item.delivery_time || null,
+          company: item.company?.name || null
+        };
+      })
       .sort((a, b) => a.price - b.price);
 
     return res.status(200).json({ success: true, data: { options } });
