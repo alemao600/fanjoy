@@ -732,10 +732,16 @@
       const stock = cachedProducts.reduce((s, p) => s + Number(p.stock || 0), 0);
       const orders = cachedOrders || [];
       const totalOrders = orders.length;
-      const revenue = orders
-        .filter((o) => !["cancelled", "failed"].includes(String(o.status || "").toLowerCase()))
-        .reduce((sum, o) => sum + Number(o.total || 0), 0);
-      const ticket = totalOrders ? revenue / totalOrders : 0;
+      const isPaidOrder = (order) => {
+        const status = String(order?.status || "").toLowerCase();
+        const payment = String(order?.payment_status || "").toLowerCase();
+        if (["approved", "paid"].includes(payment)) return true;
+        if (["paid", "processing", "shipped", "delivered"].includes(status)) return true;
+        return false;
+      };
+      const paidOrders = orders.filter(isPaidOrder);
+      const revenue = paidOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const ticket = paidOrders.length ? revenue / paidOrders.length : 0;
 
       const byStatus = orders.reduce((acc, o) => {
         const status = String(o.status || "pending").toLowerCase();
