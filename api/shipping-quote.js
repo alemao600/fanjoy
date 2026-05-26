@@ -68,7 +68,8 @@
       .map((item) => ({
         id: item.id,
         name: item.name || item.company?.name || 'Frete',
-        price: Number(item.custom_price || item.price || 0),
+        // Usa o preço base da cotação para bater com o painel do Melhor Envio.
+        price: Number(item.price || item.custom_price || 0),
         delivery_time: item.custom_delivery_time || item.delivery_time || null,
         company: item.company?.name || null
       }))
