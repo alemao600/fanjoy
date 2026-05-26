@@ -226,6 +226,7 @@ async function checkout() {
   }
 
   const defaultAddress = customer.addresses.find((a) => a.isDefault) || customer.addresses[0];
+  const fullName = `${customer.name || ""} ${customer.lastName || ""}`.trim();
   const orderResp = await FanjoyAPI.Orders.create({
     items: cart.map((item) => ({
       product: item.id,
@@ -275,6 +276,22 @@ async function checkout() {
           unit_price: shipping
         }
       ],
+      payer: {
+        email: customer?.email || null,
+        first_name: customer?.name || null,
+        last_name: customer?.lastName || null,
+        full_name: fullName || null,
+        phone: customer?.phone || null,
+        cpf: customer?.cpf || null,
+        address: {
+          zip_code: (defaultAddress.cep || "").replace(/\D/g, ""),
+          street_name: defaultAddress.street || null,
+          street_number: String(defaultAddress.number || ""),
+          neighborhood: defaultAddress.neighborhood || null,
+          city: defaultAddress.city || null,
+          federal_unit: defaultAddress.state || null
+        }
+      },
       shipping: {
         cep: shippingCep,
         service: selectedShipping.name,

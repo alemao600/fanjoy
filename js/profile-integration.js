@@ -1,4 +1,4 @@
-let currentCustomer = null;
+ï»¿let currentCustomer = null;
 let editingAddressId = null;
 
 function switchTab(tab) {
@@ -18,7 +18,7 @@ function switchTab(tab) {
   if (tab === 'orders') document.getElementById('ordersTab')?.classList.add('active');
 }
 
-function showSuccessMessage(message = 'Informações salvas com sucesso!') {
+function showSuccessMessage(message = 'InformaÃ§Ãµes salvas com sucesso!') {
   const msg = document.getElementById('successMessage');
   if (!msg) return;
   msg.textContent = message;
@@ -41,13 +41,13 @@ function renderAddresses() {
 
   const addresses = currentCustomer?.addresses || [];
   if (!addresses.length) {
-    list.innerHTML = '<div class="empty-state"><h3>Nenhum endereço cadastrado</h3><p>Adicione um endereço para continuar.</p></div>';
+    list.innerHTML = '<div class="empty-state"><h3>Nenhum endereÃ§o cadastrado</h3><p>Adicione um endereÃ§o para continuar.</p></div>';
     return;
   }
 
   list.innerHTML = addresses.map((addr) => `
     <div class="address-card">
-      <h3>${addr.label || 'Endereço'}</h3>
+      <h3>${addr.label || 'EndereÃ§o'}</h3>
       <p><strong>CEP:</strong> ${addr.cep || '-'}</p>
       <p>${addr.street || ''}, ${addr.number || ''}${addr.complement ? ' - ' + addr.complement : ''}</p>
       <p>${addr.neighborhood || ''}, ${addr.city || ''} - ${addr.state || ''}</p>
@@ -64,7 +64,7 @@ function renderOrders(orders) {
   if (!list) return;
 
   if (!orders?.length) {
-    list.innerHTML = '<div class="empty-state"><h3>Nenhum pedido realizado</h3><p>Você ainda não fez nenhuma compra.</p></div>';
+    list.innerHTML = '<div class="empty-state"><h3>Nenhum pedido realizado</h3><p>VocÃª ainda nÃ£o fez nenhuma compra.</p></div>';
     return;
   }
 
@@ -95,7 +95,7 @@ function renderOrders(orders) {
 async function loadCustomerData() {
   const response = await FanjoyAPI.Customers.getProfile();
   if (!response.success) {
-    alert('Sessão expirada. Faça login novamente.');
+    alert('SessÃ£o expirada. FaÃ§a login novamente.');
     await FanjoyAPI.Auth.logout();
     return;
   }
@@ -139,7 +139,7 @@ function openAddressModal(addressId = null) {
   if (addressId) {
     const found = (currentCustomer?.addresses || []).find((a) => String(a._id || a.id) === String(addressId));
     if (found) {
-      title.textContent = 'Editar Endereço';
+      title.textContent = 'Editar EndereÃ§o';
       document.getElementById('addressLabel').value = found.label || '';
       document.getElementById('addressCEP').value = found.cep || '';
       document.getElementById('addressStreet').value = found.street || '';
@@ -150,7 +150,7 @@ function openAddressModal(addressId = null) {
       document.getElementById('addressState').value = found.state || '';
     }
   } else {
-    title.textContent = 'Adicionar Endereço';
+    title.textContent = 'Adicionar EndereÃ§o';
   }
 
   modal.classList.add('active');
@@ -180,26 +180,26 @@ async function saveAddress(e) {
     : await FanjoyAPI.Customers.addAddress(payload);
 
   if (!response.success) {
-    alert(response.message || 'Erro ao salvar endereço');
+    alert(response.message || 'Erro ao salvar endereÃ§o');
     return;
   }
 
   currentCustomer = response.data;
   renderAddresses();
   closeAddressModal();
-  showSuccessMessage('Endereço salvo com sucesso!');
+  showSuccessMessage('EndereÃ§o salvo com sucesso!');
 }
 
 async function deleteAddress(addressId) {
-  if (!confirm('Deseja excluir este endereço?')) return;
+  if (!confirm('Deseja excluir este endereÃ§o?')) return;
   const response = await FanjoyAPI.Customers.deleteAddress(addressId);
   if (!response.success) {
-    alert(response.message || 'Erro ao excluir endereço');
+    alert(response.message || 'Erro ao excluir endereÃ§o');
     return;
   }
   currentCustomer = response.data;
   renderAddresses();
-  showSuccessMessage('Endereço excluído.');
+  showSuccessMessage('EndereÃ§o excluÃ­do.');
 }
 
 function editAddress(addressId) {
