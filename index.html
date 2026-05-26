@@ -1332,12 +1332,12 @@
           "assets/products/camiseta-bts/tamanhos.png"
       ];
       const current = uniqueImages(Array.isArray(clone.images) ? clone.images : [clone.image]);
-      const merged = uniqueImages([...current, ...fallback]);
       if (isBtsShirt) {
+        const merged = uniqueImages([...current, ...fallback]);
         const ordered = fallback.map((wanted) => merged.find((img) => buildImageKey(img) === buildImageKey(wanted))).filter(Boolean);
         clone.images = ordered.length === 4 ? ordered : merged.slice(0, 4);
       } else {
-        clone.images = merged;
+        clone.images = current.length ? current : (clone.image ? [clone.image] : []);
       }
 
       return clone;
