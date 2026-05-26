@@ -224,6 +224,37 @@
     }
 
     .status { font-size: 13px; font-weight: 700; }
+    .product-mini-card {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .product-mini-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(17,24,39,.08);
+      border-color: #d8b4fe;
+    }
+    .product-mini-card.active {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 2px rgba(124,58,237,.12);
+      background: linear-gradient(120deg, #fff, #faf5ff);
+    }
+    .product-mini-thumb {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #f3f4f6;
+    }
+    .product-mini-name { font-weight: 800; margin-bottom: 2px; }
+    .product-mini-meta { font-size: 12px; color: #6b7280; }
 
     @media (max-width: 1100px) {
       main { grid-template-columns: 1fr; }
@@ -303,7 +334,10 @@
       <div id="tab-products" class="tab stack">
         <div class="grid">
           <div class="card stack">
-            <h3 style="margin:0;">Cadastro de Produto</h3>
+            <div class="btn-row" style="justify-content:space-between;align-items:center;">
+              <h3 style="margin:0;">Cadastro de Produto</h3>
+              <span id="productEditorMode" class="chip" style="margin:0;">Novo produto</span>
+            </div>
             <input type="hidden" id="productId" />
             <label>Nome<input id="name" /></label>
             <label>Descrição<textarea id="description"></textarea></label>
@@ -379,13 +413,17 @@
           </div>
 
           <div class="card stack">
-            <h3 style="margin:0;">Catálogo Atual</h3>
+            <div class="btn-row" style="justify-content:space-between;align-items:center;">
+              <h3 style="margin:0;">Catálogo Atual</h3>
+              <button class="btn btn-primary" type="button" onclick="startNewProduct()">+ Novo</button>
+            </div>
             <label>Buscar produto<input id="productSearch" placeholder="Nome, tag, descrição" /></label>
-            <div style="max-height:550px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px;">
-              <table>
-                <thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>
-                <tbody id="productsRows"></tbody>
-              </table>
+            <div style="max-height:620px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; padding:10px; background:#fafafa;">
+              <div id="productsRows" class="stack" style="gap:10px;"></div>
+            </div>
+            <div class="muted">Clique no card para editar rapidamente.</div>
+            <div id="productQuickPreview" class="card" style="padding:10px;background:#fff;">
+              <div class="muted">Selecione um produto para ver detalhes rápidos.</div>
             </div>
           </div>
         </div>
@@ -519,6 +557,7 @@
     let cachedProducts = [];
     let cachedCategories = [];
     let cachedOrders = [];
+    let selectedProductId = null;
     let filteredOrders = [];
     let ordersPage = 1;
     const ordersPageSize = 12;
@@ -921,28 +960,28 @@
 
       const tbody = document.getElementById("productsRows");
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="4" class="muted">Nenhum produto encontrado.</td></tr>`;
+        tbody.innerHTML = `<div class="muted">Nenhum produto encontrado.</div>`;
         return;
       }
 
       tbody.innerHTML = filtered
         .map((p) => {
           const cats = (p.categories || []).map((x) => x.name).filter(Boolean).join(", ");
+          const active = String(selectedProductId || "") === String(p.id) ? "active" : "";
+          const thumb = (p.images && p.images[0]) || p.image || "";
           return `
-            <tr>
-              <td>
-                <strong>${p.name}</strong>
-                <div class="muted">${cats || "Sem categoria"}</div>
-              </td>
-              <td>R$ ${Number(p.price || 0).toFixed(2)}</td>
-              <td>${p.stock || 0}</td>
-              <td>
-                <div class="btn-row">
-                  <button class="btn btn-secondary" onclick="editProduct('${p.id}')">Editar</button>
-                  <button class="btn btn-danger" onclick="deleteProduct('${p.id}')">Excluir</button>
-                </div>
-              </td>
-            </tr>
+            <div class="product-mini-card ${active}" onclick="editProduct('${p.id}')">
+              <img class="product-mini-thumb" src="${thumb}" alt="${p.name}" />
+              <div>
+                <div class="product-mini-name">${p.name}</div>
+                <div class="product-mini-meta">${cats || "Sem categoria"}</div>
+                <div class="product-mini-meta">R$ ${Number(p.price || 0).toFixed(2)} • Estoque ${p.stock || 0}</div>
+              </div>
+              <div class="btn-row" onclick="event.stopPropagation()">
+                <button class="btn btn-secondary" onclick="editProduct('${p.id}')">Editar</button>
+                <button class="btn btn-danger" onclick="deleteProduct('${p.id}')">Excluir</button>
+              </div>
+            </div>
           `;
         })
         .join("");
@@ -966,6 +1005,18 @@
       });
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => (c.checked = false));
       writeVariantForm({});
+      selectedProductId = null;
+      const mode = document.getElementById("productEditorMode");
+      if (mode) mode.textContent = "Novo produto";
+      const quick = document.getElementById("productQuickPreview");
+      if (quick) quick.innerHTML = '<div class="muted">Selecione um produto para ver detalhes rápidos.</div>';
+      renderProducts();
+    }
+
+    function startNewProduct() {
+      resetProductForm();
+      switchTab("products");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function readFileAsDataURL(file) {
@@ -1001,6 +1052,7 @@
     function editProduct(id) {
       const p = cachedProducts.find((x) => x.id === id);
       if (!p) return;
+      selectedProductId = p.id;
 
       document.getElementById("productId").value = p.id;
       document.getElementById("name").value = p.name || "";
@@ -1022,6 +1074,23 @@
         sizes: p.sizes || stored?.sizes || [],
         variantStock: p.variantStock || stored?.variantStock || {}
       });
+      const mode = document.getElementById("productEditorMode");
+      if (mode) mode.textContent = `Editando: ${p.name}`;
+      const cats = (p.categories || []).map((c) => c.name).filter(Boolean).join(", ");
+      const quick = document.getElementById("productQuickPreview");
+      if (quick) {
+        quick.innerHTML = `
+          <div style="display:flex;gap:10px;align-items:center;">
+            <img src="${(p.images && p.images[0]) || p.image || ""}" alt="${p.name}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;background:#f3f4f6;">
+            <div>
+              <div style="font-weight:800;">${p.name}</div>
+              <div class="muted">${cats || "Sem categoria"}</div>
+              <div class="muted">R$ ${Number(p.price || 0).toFixed(2)} • Estoque ${p.stock || 0}</div>
+            </div>
+          </div>
+        `;
+      }
+      renderProducts();
 
       switchTab("products");
       window.scrollTo({ top: 0, behavior: "smooth" });
