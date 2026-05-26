@@ -178,7 +178,11 @@ async function handleRegister(e) {
         document.getElementById('loginEmail').value = email;
       }, 2000);
     } else {
-      showMessage('registerError', response.message || 'Erro ao criar conta');
+      if (/already|exists|cadastrado|registered|email/i.test(String(response.message || ""))) {
+        showMessage('registerError', 'E-mail já cadastrado. Use a aba Entrar para fazer login.');
+      } else {
+        showMessage('registerError', response.message || 'Erro ao criar conta');
+      }
     }
   } catch (error) {
     console.error('Erro no registro:', error);
