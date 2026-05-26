@@ -199,7 +199,12 @@ async function checkout() {
   }
 
   let customer = null;
-  const profileResponse = await FanjoyAPI.Customers.getProfile();
+  let profileResponse = await FanjoyAPI.Customers.getProfile();
+  if (!profileResponse.success) {
+    // Retry once after a short delay to allow auth session recovery.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    profileResponse = await FanjoyAPI.Customers.getProfile();
+  }
   if (!profileResponse.success) {
     alert('Faça login para finalizar a compra.');
     window.location.href = 'customer-login.html';

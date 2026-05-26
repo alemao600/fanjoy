@@ -32,13 +32,53 @@
     return { success: false, message: message || "Erro inesperado" };
   }
 
+  function readSessionBackup() {
+    try {
+      return JSON.parse(localStorage.getItem("fanjoy_session_backup") || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeSessionBackup(session) {
+    if (!session) return;
+    const payload = {
+      access_token: session.access_token || null,
+      refresh_token: session.refresh_token || null
+    };
+    localStorage.setItem("fanjoy_session_backup", JSON.stringify(payload));
+  }
+
+  async function tryRecoverSessionFromBackup() {
+    const backup = readSessionBackup();
+    if (!backup?.access_token || !backup?.refresh_token) return null;
+    const { data, error } = await sb.auth.setSession({
+      access_token: backup.access_token,
+      refresh_token: backup.refresh_token
+    });
+    if (error) return null;
+    return data?.session?.user || null;
+  }
+
   async function getSessionUser() {
     const { data: userData, error: userError } = await sb.auth.getUser();
-    if (!userError && userData?.user) return userData.user;
+    if (!userError && userData?.user) {
+      const { data: sessionData } = await sb.auth.getSession();
+      if (sessionData?.session) writeSessionBackup(sessionData.session);
+      return userData.user;
+    }
 
     // Fallback: when getUser fails transiently, try local session object
     const { data: sessionData } = await sb.auth.getSession();
-    if (sessionData?.session?.user) return sessionData.session.user;
+    if (sessionData?.session?.user) {
+      writeSessionBackup(sessionData.session);
+      return sessionData.session.user;
+    }
+
+    // Final fallback: restore session explicitly from persisted backup
+    const recovered = await tryRecoverSessionFromBackup();
+    if (recovered) return recovered;
+
     return null;
   }
 
@@ -185,6 +225,7 @@
         sessionStorage.setItem("fanjoy_customer_logged", "true");
         sessionStorage.setItem("fanjoy_customer_id", customer._id);
         sessionStorage.setItem("fanjoy_customer_name", customer.name || "Cliente");
+        if (data.session) writeSessionBackup(data.session);
 
         return ok({ token: data.session?.access_token || "supabase-session", customer });
       } catch (err) {
@@ -202,6 +243,7 @@
       sessionStorage.removeItem("fanjoy_customer_id");
       sessionStorage.removeItem("fanjoy_customer_name");
       localStorage.removeItem("fanjoy_token");
+      localStorage.removeItem("fanjoy_session_backup");
       window.location.href = "index.html";
     },
 
