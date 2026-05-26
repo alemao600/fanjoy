@@ -924,7 +924,7 @@
       <div class="nav-actions">
         <button class="btn ghost" onclick="toggleMiniCart(true)" style="position: relative; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
           Carrinho
-          <span id="cartCount" style="position: absolute; top: -8px; right: -8px; background: #ff6bce; color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">0</span>
+          <span id="cartCount" style="position: absolute; top: -8px; right: -8px; background: #ff6bce; color: white; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: none; align-items: center; justify-content: center; font-size: 11px; line-height: 1; font-weight: 800;">0</span>
         </button>
         <button class="btn ghost" id="loginBtn" onclick="handleLoginClick()">Login</button>
         <button class="btn primary" onclick="scrollToProducts()">Shop</button>
@@ -1118,7 +1118,7 @@
       const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
       
       if (totalItems > 0) {
-        cartCount.textContent = totalItems;
+        cartCount.textContent = totalItems > 99 ? '99+' : String(totalItems);
         cartCount.style.display = 'flex';
       } else {
         cartCount.style.display = 'none';

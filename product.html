@@ -74,7 +74,7 @@
           <button class="btn primary" onclick="addCurrentToCart()">Adicionar ao carrinho</button>
         </div>
 
-        <div class="obs">
+        <div class="obs" id="productObs">
           <strong>Observações Importantes:</strong> devido a costura ser realizada com maquinário numa linha de produção, há um processo manual em que os tamanhos podem oscilar entre 1cm (um centímetro) e 2cm (dois centímetros) para mais ou para menos, por isso, recomendamos que solicite sempre um tamanho maior.
         </div>
       </section>
@@ -152,12 +152,12 @@
           "assets/products/camiseta-bts/tamanhos.png"
       ];
       const images = uniqueImages(Array.isArray(output.images) ? output.images : [output.image]);
-      const merged = uniqueImages([...images, ...fallback]);
       if (isBtsShirt) {
+        const merged = uniqueImages([...images, ...fallback]);
         const ordered = fallback.map((wanted) => merged.find((img) => buildImageKey(img) === buildImageKey(wanted))).filter(Boolean);
         output.images = ordered.length === 4 ? ordered : merged.slice(0, 4);
       } else {
-        output.images = merged;
+        output.images = images.length ? images : (output.image ? [output.image] : []);
       }
       if (!output.images || !output.images.length) output.images = [output.image || ""];
       return output;
@@ -218,6 +218,10 @@
         selectedSize = sizes[0];
         document.getElementById('sizes').innerHTML = sizes.map((s, i) => `<button class="${i===0?'active':''}" onclick="selectSize('${s}', event)">${s}</button>`).join('');
       }
+
+      const obs = document.getElementById('productObs');
+      const isBtsShirt = String(currentProduct.name || "").toLowerCase().includes("camiseta bts");
+      obs.style.display = isBtsShirt ? 'block' : 'none';
     }
 
     function setImage(index) {
