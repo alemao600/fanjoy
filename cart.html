@@ -12,6 +12,8 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Inter,sans-serif;background:#f5f6fa;color:var(--text)}
     header{padding:18px 24px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+    .brand-link{display:inline-flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:800;font-size:22px}
+    .brand-link img{width:34px;height:34px;border-radius:50%;object-fit:cover}
     .wrap{max-width:1200px;margin:0 auto;padding:24px 16px}
     .title{font-size:34px;font-weight:800;margin-bottom:18px}
     .layout{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start}
@@ -43,7 +45,14 @@
   </style>
 </head>
 <body>
-  <header><div class="wrap" style="padding:0;"><strong style="font-size:22px;">Fanjoy Checkout</strong></div></header>
+  <header>
+    <div class="wrap" style="padding:0;">
+      <a class="brand-link" href="index.html">
+        <img src="logo.png" alt="Fanjoy">
+        <span>Fanjoy Checkout</span>
+      </a>
+    </div>
+  </header>
   <main class="wrap">
     <h1 class="title">Seu Carrinho</h1>
     <div class="layout">

@@ -47,6 +47,19 @@
       font-size: 22px;
       letter-spacing: -0.01em;
     }
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      text-decoration: none;
+    }
+    .brand-link img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
 
     .sub {
       display: block;
@@ -224,10 +237,13 @@
 </head>
 <body>
   <header>
-    <div>
-      <h1>Painel Admin Fanjoy</h1>
-      <span class="sub">Gestão completa da loja, conteúdo e visual</span>
-    </div>
+    <a class="brand-link" href="index.html">
+      <img src="logo.png" alt="Fanjoy">
+      <div>
+        <h1>Painel Admin Fanjoy</h1>
+        <span class="sub">Gestão completa da loja, conteúdo e visual</span>
+      </div>
+    </a>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="window.location.href='index.html'">Ver Loja</button>
       <button class="btn btn-danger" onclick="logout()">Sair</button>

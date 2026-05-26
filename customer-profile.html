@@ -37,10 +37,19 @@
     }
 
     .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       font-size: 24px;
       font-weight: 800;
       text-decoration: none;
       color: white;
+    }
+    .logo img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
     }
 
     .header-actions {
@@ -518,7 +527,10 @@
 <body>
   <header>
     <div class="header-content">
-      <a href="index.html" class="logo">Fanjoy</a>
+      <a href="index.html" class="logo">
+        <img src="logo.png" alt="Fanjoy">
+        <span>Fanjoy</span>
+      </a>
       <div class="header-actions">
         <span>Olá, <strong id="customerName">Cliente</strong></span>
         <button class="btn btn-secondary" onclick="logout()">Sair</button>
