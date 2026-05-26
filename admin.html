@@ -255,6 +255,32 @@
     }
     .product-mini-name { font-weight: 800; margin-bottom: 2px; }
     .product-mini-meta { font-size: 12px; color: #6b7280; }
+    .order-modern-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .order-modern-top {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr .8fr .8fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .order-modern-title { font-weight: 800; font-size: 16px; }
+    .order-modern-sub { color: #6b7280; font-size: 12px; }
+    .order-modern-total { font-size: 22px; font-weight: 800; }
+    .order-modern-actions {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    @media (max-width: 1100px) {
+      .order-modern-top { grid-template-columns: 1fr; }
+      .order-modern-actions { grid-template-columns: 1fr; }
+    }
 
     @media (max-width: 1100px) {
       main { grid-template-columns: 1fr; }
@@ -471,13 +497,8 @@
               </select>
             </label>
           </div>
-          <div style="max-height:520px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;">
-            <table>
-              <thead>
-                <tr><th>Pedido</th><th>Cliente</th><th>Pagamento</th><th>Total</th><th>Status</th><th>Ações</th></tr>
-              </thead>
-              <tbody id="ordersRows"></tbody>
-            </table>
+          <div style="max-height:520px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fafafa;">
+            <div id="ordersRows" class="stack" style="gap:10px;"></div>
           </div>
           <div class="btn-row" style="justify-content:space-between;align-items:center;">
             <span id="ordersPaginationInfo" class="muted">0 pedidos</span>
@@ -669,7 +690,7 @@
     async function loadAdminOrders() {
       const rows = document.getElementById("ordersRows");
       if (!rows) return;
-      rows.innerHTML = `<tr><td colspan="6" class="muted">Carregando pedidos...</td></tr>`;
+      rows.innerHTML = `<div class="muted">Carregando pedidos...</div>`;
       try {
         const adminToken = sessionStorage.getItem("fanjoy_admin_token") || "admin123";
         const resp = await fetch("/api/admin-orders", {
@@ -677,14 +698,14 @@
         });
         const data = await resp.json();
         if (!resp.ok || !data.success) {
-          rows.innerHTML = `<tr><td colspan="6" class="muted">Erro: ${data.message || "não foi possível carregar."}</td></tr>`;
+          rows.innerHTML = `<div class="muted">Erro: ${data.message || "não foi possível carregar."}</div>`;
           return;
         }
         cachedOrders = data.data.orders || [];
         renderOrders();
         updateDashboard();
       } catch (error) {
-        rows.innerHTML = `<tr><td colspan="6" class="muted">Erro: ${error.message}</td></tr>`;
+        rows.innerHTML = `<div class="muted">Erro: ${error.message}</div>`;
       }
     }
 
@@ -742,7 +763,7 @@
         ? filteredOrders
         : cachedOrders;
       if (!source.length) {
-        rows.innerHTML = `<tr><td colspan="6" class="muted">Nenhum pedido ainda.</td></tr>`;
+        rows.innerHTML = `<div class="muted">Nenhum pedido ainda.</div>`;
         updateOrdersPagination(0, 0, 0);
         return;
       }
@@ -776,40 +797,44 @@
         const itemsPreview = orderItems.map((it) => `${it.products?.name || "Produto"} x${it.quantity}`).join(", ");
         const currentStatus = o.status || "pending";
         return `
-          <tr>
-            <td>
-              <strong>${o.order_number || o.id}</strong>
-              <div class="muted">${new Date(o.created_at).toLocaleString("pt-BR")}</div>
-            </td>
-            <td>
-              <div><strong>${customer.name || "Cliente"}</strong></div>
-              <div class="muted">${customer.email || ""}</div>
-              <div class="muted">${customer.phone || "Sem telefone"}</div>
-              <div class="muted">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
-            </td>
-            <td>
-              <div><strong>${statusLabel(o.payment_status || "pending")}</strong></div>
-              <div class="muted">${itemsPreview || "Itens não encontrados"}</div>
-            </td>
-            <td><strong>R$ ${Number(o.total || 0).toFixed(2)}</strong></td>
-            <td>
-              <select id="orderStatus-${o.id}">
-                <option value="pending" ${currentStatus === "pending" ? "selected" : ""}>Pendente</option>
-                <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Pago</option>
-                <option value="processing" ${currentStatus === "processing" ? "selected" : ""}>Em separação</option>
-                <option value="shipped" ${currentStatus === "shipped" ? "selected" : ""}>Enviado</option>
-                <option value="delivered" ${currentStatus === "delivered" ? "selected" : ""}>Entregue</option>
-                <option value="cancelled" ${currentStatus === "cancelled" ? "selected" : ""}>Cancelado</option>
-              </select>
-              <input id="track-${o.id}" placeholder="Código de rastreio" value="${o.tracking_code || ""}" style="margin-top:6px;" />
-            </td>
-            <td>
-              <div class="btn-row">
-                <button class="btn btn-primary" onclick="saveOrderUpdate('${o.id}')">Salvar</button>
-                <button class="btn btn-secondary" onclick="openShippingGuide('${o.id}')">Etiqueta</button>
+          <div class="order-modern-card">
+            <div class="order-modern-top">
+              <div>
+                <div class="order-modern-title">${o.order_number || o.id}</div>
+                <div class="order-modern-sub">${new Date(o.created_at).toLocaleString("pt-BR")}</div>
+                <div class="order-modern-sub">${itemsPreview || "Itens não encontrados"}</div>
               </div>
-            </td>
-          </tr>
+              <div>
+                <div><strong>${customer.name || "Cliente"}</strong></div>
+                <div class="order-modern-sub">${customer.email || ""}</div>
+                <div class="order-modern-sub">${customer.phone || "Sem telefone"}</div>
+                <div class="order-modern-sub">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
+              </div>
+              <div>
+                <div class="order-modern-sub">Pagamento</div>
+                <div><strong>${statusLabel(o.payment_status || "pending")}</strong></div>
+              </div>
+              <div>
+                <div class="order-modern-sub">Total</div>
+                <div class="order-modern-total">R$ ${Number(o.total || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            <div class="order-modern-actions">
+              <div class="btn-row" style="gap:8px;">
+                <select id="orderStatus-${o.id}">
+                  <option value="pending" ${currentStatus === "pending" ? "selected" : ""}>Pendente</option>
+                  <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Pago</option>
+                  <option value="processing" ${currentStatus === "processing" ? "selected" : ""}>Em separação</option>
+                  <option value="shipped" ${currentStatus === "shipped" ? "selected" : ""}>Enviado</option>
+                  <option value="delivered" ${currentStatus === "delivered" ? "selected" : ""}>Entregue</option>
+                  <option value="cancelled" ${currentStatus === "cancelled" ? "selected" : ""}>Cancelado</option>
+                </select>
+                <input id="track-${o.id}" placeholder="Código de rastreio" value="${o.tracking_code || ""}" />
+              </div>
+              <button class="btn btn-primary" onclick="saveOrderUpdate('${o.id}')">Salvar</button>
+              <button class="btn btn-secondary" onclick="openShippingGuide('${o.id}')">Etiqueta</button>
+            </div>
+          </div>
         `;
       }).join("");
       updateOrdersPagination(total, ordersPage, totalPages);
