@@ -277,6 +277,48 @@
       gap: 8px;
       align-items: center;
     }
+    .dash-hero {
+      background: linear-gradient(120deg, rgba(236,72,153,.12), rgba(124,58,237,.12));
+      border: 1px solid #e9d5ff;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dash-hero-title { font-size: 20px; font-weight: 800; }
+    .dash-hero-sub { color: #6b7280; font-size: 13px; margin-top: 4px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 12px; }
+    .kpi {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .kpi small { color: #6b7280; font-weight: 700; }
+    .kpi strong { display:block; margin-top: 6px; font-size: 30px; letter-spacing: -0.02em; }
+    .kpi.accent strong { color: #7c3aed; }
+    .kpi.success strong { color: #059669; }
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #6b7280;
+      letter-spacing: .04em;
+      margin-bottom: 8px;
+    }
+    .dash-grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .dash-panel {
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px;
+    }
+    .status-grid { display:grid; grid-template-columns: repeat(2,minmax(140px,1fr)); gap:8px; }
+    .status-kpi { border:1px solid #eef2f7; border-radius:10px; padding:10px; background:#fcfcfd; }
+    .status-kpi b { display:block; font-size:30px; margin-top:4px; }
     @media (max-width: 1100px) {
       .order-modern-top { grid-template-columns: 1fr; }
       .order-modern-actions { grid-template-columns: 1fr; }
@@ -289,6 +331,8 @@
       .stats { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
       .grid { grid-template-columns: 1fr; }
       .color-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .dash-grid-2 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -320,38 +364,51 @@
 
     <section class="panel content">
       <div id="tab-dashboard" class="tab active stack">
-        <div class="stats">
-          <div class="stat"><small>Produtos</small><strong id="statProducts">0</strong></div>
-          <div class="stat"><small>Categorias</small><strong id="statCategories">0</strong></div>
-          <div class="stat"><small>Preço médio</small><strong id="statAvg">R$ 0</strong></div>
-          <div class="stat"><small>Estoque total</small><strong id="statStock">0</strong></div>
+        <div class="dash-hero">
+          <div>
+            <div class="dash-hero-title">Visão Geral da Operação</div>
+            <div class="dash-hero-sub">Acompanhe vendas, estoque e envios em tempo real.</div>
+          </div>
+          <button class="btn btn-secondary" type="button" onclick="loadAll()">Atualizar Dashboard</button>
         </div>
-        <div class="stats">
-          <div class="stat"><small>Pedidos totais</small><strong id="statOrders">0</strong></div>
-          <div class="stat"><small>Faturamento</small><strong id="statRevenue">R$ 0</strong></div>
-          <div class="stat"><small>Ticket médio</small><strong id="statTicket">R$ 0</strong></div>
-          <div class="stat"><small>Pedidos enviados</small><strong id="statShipped">0</strong></div>
+        <div>
+          <div class="section-title">Indicadores Principais</div>
+          <div class="kpi-grid">
+            <div class="kpi"><small>Produtos</small><strong id="statProducts">0</strong></div>
+            <div class="kpi"><small>Categorias</small><strong id="statCategories">0</strong></div>
+            <div class="kpi"><small>Preço médio</small><strong id="statAvg">R$ 0</strong></div>
+            <div class="kpi"><small>Estoque total</small><strong id="statStock">0</strong></div>
+          </div>
         </div>
-        <div class="grid">
-          <div class="card">
+        <div>
+          <div class="section-title">Vendas e Envios</div>
+          <div class="kpi-grid">
+            <div class="kpi"><small>Pedidos totais</small><strong id="statOrders">0</strong></div>
+            <div class="kpi success"><small>Faturamento</small><strong id="statRevenue">R$ 0</strong></div>
+            <div class="kpi accent"><small>Ticket médio</small><strong id="statTicket">R$ 0</strong></div>
+            <div class="kpi"><small>Pedidos enviados</small><strong id="statShipped">0</strong></div>
+          </div>
+        </div>
+        <div class="dash-grid-2">
+          <div class="dash-panel">
             <h3 style="margin:0 0 10px;">Painel de Pedidos</h3>
-            <div class="stats" style="grid-template-columns:repeat(2,minmax(120px,1fr));">
-              <div class="stat"><small>Pendentes</small><strong id="statPending">0</strong></div>
-              <div class="stat"><small>Pagos</small><strong id="statPaid">0</strong></div>
-              <div class="stat"><small>Entregues</small><strong id="statDelivered">0</strong></div>
-              <div class="stat"><small>Cancelados</small><strong id="statCancelled">0</strong></div>
+            <div class="status-grid">
+              <div class="status-kpi"><small>Pendentes</small><b id="statPending">0</b></div>
+              <div class="status-kpi"><small>Pagos</small><b id="statPaid">0</b></div>
+              <div class="status-kpi"><small>Entregues</small><b id="statDelivered">0</b></div>
+              <div class="status-kpi"><small>Cancelados</small><b id="statCancelled">0</b></div>
             </div>
           </div>
-          <div class="card">
+          <div class="dash-panel">
             <h3 style="margin:0 0 10px;">Produtos Mais Vendidos</h3>
             <div id="topProducts" class="muted">Sem vendas ainda.</div>
           </div>
         </div>
-        <div class="card">
+        <div class="dash-panel">
           <h3 style="margin:0 0 10px;">Controle de Estoque</h3>
           <div id="stockByProduct" class="muted">Sem produtos cadastrados.</div>
         </div>
-        <div class="card">
+        <div class="dash-panel">
           <h3 style="margin:0 0 8px;">Resumo</h3>
           <p class="muted" id="dashboardSummary">Carregando dados...</p>
         </div>
