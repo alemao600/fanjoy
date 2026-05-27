@@ -398,9 +398,29 @@
 
     async delete(id) {
       try {
+        // Always remove category links first.
+        const { error: relError } = await sb.from("product_categories").delete().eq("product_id", id);
+        if (relError) return fail(relError.message);
+
+        // Try hard-delete. If constrained by existing orders, fallback to soft-delete.
         const { error } = await sb.from("products").delete().eq("id", id);
-        if (error) return fail(error.message);
-        return ok({ deleted: true });
+        if (!error) return ok({ deleted: true, mode: "hard" });
+
+        const message = String(error.message || "").toLowerCase();
+        const isFkConstraint =
+          error.code === "23503" ||
+          message.includes("foreign key") ||
+          message.includes("violates foreign key constraint");
+
+        if (!isFkConstraint) return fail(error.message);
+
+        const { error: softError } = await sb
+          .from("products")
+          .update({ is_active: false })
+          .eq("id", id);
+        if (softError) return fail(softError.message);
+
+        return ok({ deleted: true, mode: "soft" }, "Produto arquivado por ter histórico de pedidos.");
       } catch (err) {
         return fail(err.message);
       }

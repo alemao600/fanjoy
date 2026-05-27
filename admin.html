@@ -1247,7 +1247,8 @@
       delete variantStore[id];
       saveVariantStore(variantStore);
       await loadAll();
-      setStatus("productStatus", "Produto excluído com sucesso.");
+      const mode = res.data?.mode === "soft" ? "arquivado" : "excluído";
+      setStatus("productStatus", `Produto ${mode} com sucesso.`);
     }
 
     async function createCategory() {
