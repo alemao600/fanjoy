@@ -263,15 +263,43 @@
   // Products
   // ========================================
 
+  function normalizeProductImageUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (raw.startsWith("data:")) return raw;
+
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      const host = parsed.hostname.toLowerCase();
+      const isLegacyHost =
+        host === "rvbot.com.br" ||
+        host === "www.rvbot.com.br" ||
+        host === "fanjoy.com.br" ||
+        host === "www.fanjoy.com.br";
+
+      // Persist and render as relative path for same project assets.
+      if (isLegacyHost || parsed.origin === window.location.origin) {
+        return `${parsed.pathname}${parsed.search || ""}${parsed.hash || ""}`;
+      }
+      return parsed.href;
+    } catch {
+      return raw;
+    }
+  }
+
   function mapProduct(row) {
+    const normalizedImages = (row.images && row.images.length ? row.images : [row.image_url || ""])
+      .map(normalizeProductImageUrl)
+      .filter(Boolean);
+
     return {
       _id: row.id,
       id: row.id,
       name: row.name,
       description: row.description,
       price: Number(row.price || 0),
-      images: row.images && row.images.length ? row.images : [row.image_url || ""],
-      image: row.image_url || (row.images && row.images[0]) || "",
+      images: normalizedImages,
+      image: normalizeProductImageUrl(row.image_url || normalizedImages[0] || ""),
       tag: row.tag,
       buttonText: row.button_text || "Comprar",
       stock: row.stock || 0,
@@ -348,14 +376,18 @@
 
     async create(productData) {
       try {
+        const normalizedImages = (productData.images || (productData.image ? [productData.image] : []))
+          .map(normalizeProductImageUrl)
+          .filter(Boolean);
+
         const { data, error } = await sb
           .from("products")
           .insert({
             name: productData.name,
             description: productData.description,
             price: productData.price,
-            image_url: productData.image || (productData.images || [])[0] || null,
-            images: productData.images || (productData.image ? [productData.image] : []),
+            image_url: normalizeProductImageUrl(productData.image || normalizedImages[0] || null),
+            images: normalizedImages,
             tag: productData.tag || null,
             button_text: productData.buttonText || "Comprar",
             stock: productData.stock || 0,
@@ -373,14 +405,18 @@
 
     async update(id, productData) {
       try {
+        const normalizedImages = (productData.images || (productData.image ? [productData.image] : []))
+          .map(normalizeProductImageUrl)
+          .filter(Boolean);
+
         const { data, error } = await sb
           .from("products")
           .update({
             name: productData.name,
             description: productData.description,
             price: productData.price,
-            image_url: productData.image || (productData.images || [])[0] || null,
-            images: productData.images || (productData.image ? [productData.image] : []),
+            image_url: normalizeProductImageUrl(productData.image || normalizedImages[0] || null),
+            images: normalizedImages,
             tag: productData.tag || null,
             button_text: productData.buttonText || "Comprar",
             stock: productData.stock || 0
