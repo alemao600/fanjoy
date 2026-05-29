@@ -564,6 +564,7 @@
             <label>Texto botão secundário<input id="cfgHeroSecondaryBtn" /></label>
           </div>
           <label>Tags da home (separadas por vírgula)<input id="cfgHeroTags" placeholder="BTS, Stray Kids, BLACKPINK..." /></label>
+          <label>Cards de categorias da home (separados por vírgula)<input id="cfgHeroCategoryCards" placeholder="BTS, Stray Kids, BLACKPINK, Doramas, Photocards, Acessórios" /></label>
           <div class="grid">
             <label>Menu 1<input id="cfgNav1" /></label>
             <label>Menu 2<input id="cfgNav2" /></label>
@@ -1415,6 +1416,7 @@
       document.getElementById("cfgHeroPrimaryBtn").value = cfg.heroPrimaryBtn || "Explorar produtos";
       document.getElementById("cfgHeroSecondaryBtn").value = cfg.heroSecondaryBtn || "Ver coleções";
       document.getElementById("cfgHeroTags").value = cfg.heroTags || "BTS, Stray Kids, BLACKPINK, NewJeans, TXT, ENHYPEN, ATEEZ, Doramas";
+      document.getElementById("cfgHeroCategoryCards").value = cfg.heroCategoryCards || "BTS, Stray Kids, BLACKPINK, Doramas, Photocards, Acessórios";
       document.getElementById("cfgNav1").value = cfg.nav1 || "Início";
       document.getElementById("cfgNav2").value = cfg.nav2 || "Categorias";
       document.getElementById("cfgNav3").value = cfg.nav3 || "Coleções";
@@ -1446,6 +1448,7 @@
         heroPrimaryBtn: document.getElementById("cfgHeroPrimaryBtn").value.trim(),
         heroSecondaryBtn: document.getElementById("cfgHeroSecondaryBtn").value.trim(),
         heroTags: document.getElementById("cfgHeroTags").value.trim(),
+        heroCategoryCards: document.getElementById("cfgHeroCategoryCards").value.trim(),
         nav1: document.getElementById("cfgNav1").value.trim(),
         nav2: document.getElementById("cfgNav2").value.trim(),
         nav3: document.getElementById("cfgNav3").value.trim(),

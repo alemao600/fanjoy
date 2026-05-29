@@ -208,6 +208,15 @@
       overflow: visible;
     }
 
+    .search-nav-btn {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-size: 16px;
+    }
+
     .cart-btn #cartCount {
       z-index: 5;
       pointer-events: none;
@@ -227,6 +236,10 @@
       padding: 26px clamp(28px, 4vw, 70px) 24px;
       position: relative;
       overflow: hidden;
+      background:
+        radial-gradient(circle at 16% 52%, rgba(255, 107, 206, 0.14), transparent 34%),
+        radial-gradient(circle at 78% 54%, rgba(124, 58, 237, 0.10), transparent 36%),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 35%, rgba(255, 255, 255, 0.72) 55%, rgba(255, 255, 255, 0.92) 100%);
     }
 
     .floating-shape {
@@ -275,10 +288,10 @@
       max-width: 1500px;
       text-align: left;
       position: relative;
-      z-index: 2;
+      z-index: 3;
       width: 100%;
       display: grid;
-      grid-template-columns: minmax(420px, 0.82fr) minmax(560px, 1.18fr);
+      grid-template-columns: minmax(420px, 560px) minmax(560px, 1fr);
       gap: 34px;
       align-items: center;
     }
@@ -296,15 +309,24 @@
       background: rgba(255,255,255,.85);
     }
     .hero-visual {
+      position: absolute;
+      inset: 0 0 0 34%;
       display: flex;
       justify-content: flex-end;
       align-items: center;
+      z-index: 1;
+      pointer-events: none;
     }
     .hero-visual img {
-      width: min(880px, 100%);
-      max-height: 610px;
-      object-fit: contain;
-      filter: drop-shadow(0 18px 40px rgba(124,58,237,.22));
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      object-fit: cover;
+      object-position: center right;
+      opacity: .96;
+      filter: saturate(1.06) drop-shadow(0 18px 40px rgba(124,58,237,.22));
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 84%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 84%, transparent 100%);
     }
     .hero-info-grid {
       display: grid;
@@ -329,6 +351,11 @@
       flex-wrap: wrap;
       margin-top: 8px;
       max-width: 650px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 107, 206, 0.16);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.62);
+      backdrop-filter: blur(10px);
     }
     .hero-tags span {
       padding: 8px 14px;
@@ -396,7 +423,7 @@
     }
 
     .products {
-      padding: 24px clamp(28px, 4vw, 70px) 34px;
+      padding: 18px clamp(28px, 4vw, 70px) 34px;
       position: relative;
     }
 
@@ -719,7 +746,7 @@
 
     /* Filters Styles */
     .filters-container {
-      margin-bottom: 32px;
+      margin-bottom: 22px;
       animation: fadeIn 0.6s ease-out 0.8s both;
     }
 
@@ -767,6 +794,65 @@
       backdrop-filter: blur(10px);
       border-radius: 16px;
       border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .category-showcase {
+      max-width: 1400px;
+      margin: 0 auto 30px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 14px;
+      animation: fadeIn 0.6s ease-out 0.95s both;
+    }
+
+    .category-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 92px;
+      padding: 16px 18px;
+      font-family: inherit;
+      text-align: left;
+      border: 1px solid rgba(124, 58, 237, 0.08);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 244, 252, 0.78)),
+        radial-gradient(circle at 20% 15%, rgba(255, 107, 206, 0.18), transparent 48%);
+      box-shadow: 0 12px 32px rgba(17, 24, 39, 0.06);
+      cursor: pointer;
+      transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+
+    .category-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 107, 206, 0.36);
+      box-shadow: 0 18px 42px rgba(124, 58, 237, 0.12);
+    }
+
+    .category-art {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      font-size: 26px;
+      font-weight: 900;
+      color: #111827;
+      background: linear-gradient(135deg, rgba(255, 107, 206, 0.20), rgba(34, 210, 255, 0.22));
+    }
+
+    .category-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .category-copy small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
     }
 
     .filter-group {
@@ -987,6 +1073,7 @@
       .hero {
         min-height: auto;
         padding: 28px 16px 18px;
+        flex-direction: column-reverse;
       }
       .hero-content {
         grid-template-columns: 1fr;
@@ -995,7 +1082,18 @@
       }
       .hero-left { max-width: none; }
       .hero-visual { justify-content: center; }
-      .hero-visual img { max-height: 330px; }
+      .hero-visual {
+        position: relative;
+        inset: auto;
+        min-height: 260px;
+      }
+      .hero-visual img {
+        position: absolute;
+        inset: 0;
+        max-height: none;
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
+        mask-image: linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
+      }
       .hero-info-grid { grid-template-columns: 1fr 1fr; }
       .nav-menu { display: none; }
 
@@ -1011,6 +1109,10 @@
       .hero-cta { justify-content: center; }
 
       .product-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .category-showcase {
         grid-template-columns: 1fr;
       }
 
@@ -1035,6 +1137,7 @@
         <a href="#products" id="navItem6">Sobre nós</a>
       </nav>
       <div class="nav-actions">
+        <button class="btn ghost search-nav-btn" onclick="focusProductSearch()" aria-label="Buscar produtos">&#128269;</button>
         <button class="btn ghost cart-btn" onclick="toggleMiniCart(true)" style="position: relative; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
           Carrinho
           <span id="cartCount" style="position: absolute; top: -8px; right: -8px; background: #ff6bce; color: white; border-radius: 999px; min-width: 20px; height: 20px; padding: 0 6px; display: none; align-items: center; justify-content: center; font-size: 11px; line-height: 1; font-weight: 800;">0</span>
@@ -1050,10 +1153,13 @@
       <div class="floating-shape shape-1"></div>
       <div class="floating-shape shape-2"></div>
       <div class="floating-shape shape-3"></div>
+      <div class="hero-visual">
+        <img id="heroVisualImage" src="fanjoyimagem.png" alt="Vitrine Fanjoy">
+      </div>
       
       <div class="hero-content">
         <div class="hero-left">
-          <div class="hero-badge" id="heroBadge">💜 FEITO POR FÃS, PARA FÃS 💜</div>
+          <div class="hero-badge" id="heroBadge">♡ FEITO POR FÃS, PARA FÃS ♡</div>
           <h1 id="heroTitleMain">
             Seu mundo<br>
             K-pop começa<br>
@@ -1075,9 +1181,6 @@
           <div class="hero-tags" id="heroTags">
             <span>BTS</span><span>Stray Kids</span><span>BLACKPINK</span><span>NewJeans</span><span>TXT</span><span>ENHYPEN</span><span>ATEEZ</span><span>Doramas</span>
           </div>
-        </div>
-        <div class="hero-visual">
-          <img id="heroVisualImage" src="fanjoyimagem.png" alt="Vitrine Fanjoy">
         </div>
       </div>
 
@@ -1134,6 +1237,33 @@
 
           <button class="btn-reset" onclick="resetFilters()">Limpar Filtros</button>
         </div>
+      </div>
+
+      <div class="category-showcase" id="homeCategoryCards" aria-label="Categorias em destaque">
+        <button class="category-card" type="button" onclick="filterByQuickCategory('BTS')">
+          <span class="category-art">◇</span>
+          <span class="category-copy"><strong>BTS</strong><small>Ver produtos →</small></span>
+        </button>
+        <button class="category-card" type="button" onclick="filterByQuickCategory('Stray Kids')">
+          <span class="category-art">SKZ</span>
+          <span class="category-copy"><strong>Stray Kids</strong><small>Ver produtos →</small></span>
+        </button>
+        <button class="category-card" type="button" onclick="filterByQuickCategory('BLACKPINK')">
+          <span class="category-art">BP</span>
+          <span class="category-copy"><strong>BLACKPINK</strong><small>Ver produtos →</small></span>
+        </button>
+        <button class="category-card" type="button" onclick="filterByQuickCategory('Doramas')">
+          <span class="category-art">🏯</span>
+          <span class="category-copy"><strong>Doramas</strong><small>Ver produtos →</small></span>
+        </button>
+        <button class="category-card" type="button" onclick="filterByQuickCategory('Photocards')">
+          <span class="category-art">🎴</span>
+          <span class="category-copy"><strong>Photocards</strong><small>Ver produtos →</small></span>
+        </button>
+        <button class="category-card" type="button" onclick="filterByQuickCategory('Acessórios')">
+          <span class="category-art">✦</span>
+          <span class="category-copy"><strong>Acessórios</strong><small>Ver produtos →</small></span>
+        </button>
       </div>
 
       <div class="products-count">
@@ -1193,7 +1323,8 @@
         heroSubtitle: 'Produtos fanmade premium inspirados nos seus idols, grupos e doramas favoritos. Exclusivos, criativos e feitos com muito amor.',
         heroBadge: '♡ FEITO POR FÃS, PARA FÃS ♡',
         heroImageUrl: 'fanjoyimagem.png',
-        heroTags: 'BTS, Stray Kids, BLACKPINK, NewJeans, TXT, ENHYPEN, ATEEZ, Doramas'
+        heroTags: 'BTS, Stray Kids, BLACKPINK, NewJeans, TXT, ENHYPEN, ATEEZ, Doramas',
+        heroCategoryCards: 'BTS, Stray Kids, BLACKPINK, Doramas, Photocards, Acessórios'
       };
       const legacyValues = {
         heroTitle: new Set(['Seu fanmade\ndiferente de tudo', 'Seu fanmade diferente de tudo']),
@@ -1262,6 +1393,7 @@
           .filter(Boolean);
         if (tags.length) heroTags.innerHTML = tags.map((t) => `<span>${t}</span>`).join('');
       }
+      renderHomeCategoryCards(useCfg('heroCategoryCards'));
 
       const bindText = (id, value) => {
         const el = document.getElementById(id);
@@ -1286,6 +1418,34 @@
       if (footerText && siteCfg.footerText) {
         footerText.textContent = siteCfg.footerText;
       }
+    }
+
+    function getCategoryIcon(label) {
+      const normalized = String(label || '').toLowerCase();
+      if (normalized.includes('stray')) return 'SKZ';
+      if (normalized.includes('black')) return 'BP';
+      if (normalized.includes('dorama')) return '🏯';
+      if (normalized.includes('photo')) return '🎴';
+      if (normalized.includes('acess')) return '✦';
+      if (normalized.includes('bts')) return '◇';
+      return '✧';
+    }
+
+    function renderHomeCategoryCards(raw) {
+      const holder = document.getElementById('homeCategoryCards');
+      if (!holder) return;
+      const labels = String(raw || '')
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .slice(0, 6);
+      if (!labels.length) return;
+      holder.innerHTML = labels.map((label) => `
+        <button class="category-card" type="button" onclick="filterByQuickCategory('${label.replace(/'/g, "\\'")}')">
+          <span class="category-art">${getCategoryIcon(label)}</span>
+          <span class="category-copy"><strong>${label}</strong><small>Ver produtos →</small></span>
+        </button>
+      `).join('');
     }
 
     // Check if customer is logged in
@@ -1746,6 +1906,20 @@
 
       renderProducts();
       updateProductCount();
+    }
+
+    function focusProductSearch() {
+      scrollToProducts();
+      setTimeout(() => document.getElementById('searchInput')?.focus(), 450);
+    }
+
+    function filterByQuickCategory(term) {
+      const searchInput = document.getElementById('searchInput');
+      const categoryFilter = document.getElementById('categoryFilter');
+      if (categoryFilter) categoryFilter.value = '';
+      if (searchInput) searchInput.value = term;
+      applyFilters();
+      scrollToProducts();
     }
 
     function updatePriceSlider() {
