@@ -553,8 +553,35 @@
             <label>Nome da marca<input id="cfgSiteName" /></label>
             <label>URL do logo<input id="cfgLogoUrl" placeholder="https://..." /></label>
           </div>
+          <div class="grid">
+            <label>Imagem principal da home<input id="cfgHeroImageUrl" placeholder="fanjoyimagem.png ou https://..." /></label>
+            <label>Tag superior da home<input id="cfgHeroBadge" placeholder="💜 FEITO POR FÃS, PARA FÃS 💜" /></label>
+          </div>
           <label>Título principal (hero)<textarea id="cfgHeroTitle"></textarea></label>
           <label>Subtítulo principal (hero)<textarea id="cfgHeroSubtitle"></textarea></label>
+          <div class="grid">
+            <label>Texto botão principal<input id="cfgHeroPrimaryBtn" /></label>
+            <label>Texto botão secundário<input id="cfgHeroSecondaryBtn" /></label>
+          </div>
+          <label>Tags da home (separadas por vírgula)<input id="cfgHeroTags" placeholder="BTS, Stray Kids, BLACKPINK..." /></label>
+          <div class="grid">
+            <label>Menu 1<input id="cfgNav1" /></label>
+            <label>Menu 2<input id="cfgNav2" /></label>
+            <label>Menu 3<input id="cfgNav3" /></label>
+            <label>Menu 4<input id="cfgNav4" /></label>
+            <label>Menu 5<input id="cfgNav5" /></label>
+            <label>Menu 6<input id="cfgNav6" /></label>
+          </div>
+          <div class="grid">
+            <label>Info 1 título<input id="cfgHeroInfo1Title" /></label>
+            <label>Info 1 texto<input id="cfgHeroInfo1Text" /></label>
+            <label>Info 2 título<input id="cfgHeroInfo2Title" /></label>
+            <label>Info 2 texto<input id="cfgHeroInfo2Text" /></label>
+            <label>Info 3 título<input id="cfgHeroInfo3Title" /></label>
+            <label>Info 3 texto<input id="cfgHeroInfo3Text" /></label>
+            <label>Info 4 título<input id="cfgHeroInfo4Title" /></label>
+            <label>Info 4 texto<input id="cfgHeroInfo4Text" /></label>
+          </div>
           <label>Título do bloco final (CTA)<textarea id="cfgCtaTitle"></textarea></label>
           <label>Texto do bloco final (CTA)<textarea id="cfgCtaText"></textarea></label>
           <label>Texto do botão do CTA<input id="cfgCtaBtn" /></label>
@@ -1381,8 +1408,27 @@
       const cfg = JSON.parse(localStorage.getItem(STORAGE_CONTENT) || "{}");
       document.getElementById("cfgSiteName").value = cfg.siteName || "Fanjoy Lab";
       document.getElementById("cfgLogoUrl").value = cfg.logoUrl || "";
-      document.getElementById("cfgHeroTitle").value = cfg.heroTitle || "Seu fanmade\ndiferente de tudo";
-      document.getElementById("cfgHeroSubtitle").value = cfg.heroSubtitle || "Camisetas, canecas, photocards e muito mais.";
+      document.getElementById("cfgHeroImageUrl").value = cfg.heroImageUrl || "fanjoyimagem.png";
+      document.getElementById("cfgHeroBadge").value = cfg.heroBadge || "💜 FEITO POR FÃS, PARA FÃS 💜";
+      document.getElementById("cfgHeroTitle").value = cfg.heroTitle || "Seu mundo\nK-pop começa\naqui.";
+      document.getElementById("cfgHeroSubtitle").value = cfg.heroSubtitle || "Produtos fanmade premium inspirados nos seus idols, grupos e doramas favoritos. Exclusivos, criativos e feitos com muito amor.";
+      document.getElementById("cfgHeroPrimaryBtn").value = cfg.heroPrimaryBtn || "Explorar produtos";
+      document.getElementById("cfgHeroSecondaryBtn").value = cfg.heroSecondaryBtn || "Ver coleções";
+      document.getElementById("cfgHeroTags").value = cfg.heroTags || "BTS, Stray Kids, BLACKPINK, NewJeans, TXT, ENHYPEN, ATEEZ, Doramas";
+      document.getElementById("cfgNav1").value = cfg.nav1 || "Início";
+      document.getElementById("cfgNav2").value = cfg.nav2 || "Categorias";
+      document.getElementById("cfgNav3").value = cfg.nav3 || "Coleções";
+      document.getElementById("cfgNav4").value = cfg.nav4 || "Novidades";
+      document.getElementById("cfgNav5").value = cfg.nav5 || "Mais vendidos";
+      document.getElementById("cfgNav6").value = cfg.nav6 || "Sobre nós";
+      document.getElementById("cfgHeroInfo1Title").value = cfg.heroInfo1Title || "4,9 de avaliação";
+      document.getElementById("cfgHeroInfo1Text").value = cfg.heroInfo1Text || "+2.000 pedidos";
+      document.getElementById("cfgHeroInfo2Title").value = cfg.heroInfo2Title || "Feito por fãs";
+      document.getElementById("cfgHeroInfo2Text").value = cfg.heroInfo2Text || "Para fãs de verdade";
+      document.getElementById("cfgHeroInfo3Title").value = cfg.heroInfo3Title || "Envios para todo BR";
+      document.getElementById("cfgHeroInfo3Text").value = cfg.heroInfo3Text || "Com rastreamento";
+      document.getElementById("cfgHeroInfo4Title").value = cfg.heroInfo4Title || "Compra segura";
+      document.getElementById("cfgHeroInfo4Text").value = cfg.heroInfo4Text || "Ambiente protegido";
       document.getElementById("cfgCtaTitle").value = cfg.ctaTitle || "Fique por dentro dos próximos drops";
       document.getElementById("cfgCtaText").value = cfg.ctaText || "Inscreva-se e receba novidades e lançamentos exclusivos";
       document.getElementById("cfgCtaBtn").value = cfg.ctaBtn || "Inscrever agora";
@@ -1393,8 +1439,27 @@
       const cfg = {
         siteName: document.getElementById("cfgSiteName").value.trim(),
         logoUrl: document.getElementById("cfgLogoUrl").value.trim(),
+        heroImageUrl: document.getElementById("cfgHeroImageUrl").value.trim(),
+        heroBadge: document.getElementById("cfgHeroBadge").value.trim(),
         heroTitle: document.getElementById("cfgHeroTitle").value.trim(),
         heroSubtitle: document.getElementById("cfgHeroSubtitle").value.trim(),
+        heroPrimaryBtn: document.getElementById("cfgHeroPrimaryBtn").value.trim(),
+        heroSecondaryBtn: document.getElementById("cfgHeroSecondaryBtn").value.trim(),
+        heroTags: document.getElementById("cfgHeroTags").value.trim(),
+        nav1: document.getElementById("cfgNav1").value.trim(),
+        nav2: document.getElementById("cfgNav2").value.trim(),
+        nav3: document.getElementById("cfgNav3").value.trim(),
+        nav4: document.getElementById("cfgNav4").value.trim(),
+        nav5: document.getElementById("cfgNav5").value.trim(),
+        nav6: document.getElementById("cfgNav6").value.trim(),
+        heroInfo1Title: document.getElementById("cfgHeroInfo1Title").value.trim(),
+        heroInfo1Text: document.getElementById("cfgHeroInfo1Text").value.trim(),
+        heroInfo2Title: document.getElementById("cfgHeroInfo2Title").value.trim(),
+        heroInfo2Text: document.getElementById("cfgHeroInfo2Text").value.trim(),
+        heroInfo3Title: document.getElementById("cfgHeroInfo3Title").value.trim(),
+        heroInfo3Text: document.getElementById("cfgHeroInfo3Text").value.trim(),
+        heroInfo4Title: document.getElementById("cfgHeroInfo4Title").value.trim(),
+        heroInfo4Text: document.getElementById("cfgHeroInfo4Text").value.trim(),
         ctaTitle: document.getElementById("cfgCtaTitle").value.trim(),
         ctaText: document.getElementById("cfgCtaText").value.trim(),
         ctaBtn: document.getElementById("cfgCtaBtn").value.trim(),
