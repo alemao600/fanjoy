@@ -18,6 +18,14 @@ module.exports = async (req, res) => {
       if (typeof payment_status === 'string' && payment_status) payload.payment_status = payment_status;
       if (typeof tracking_code === 'string') payload.tracking_code = tracking_code.trim() || null;
 
+      // Keep payment state aligned when admin updates order status.
+      if (!payload.payment_status && payload.status) {
+        const normalized = String(payload.status).toLowerCase();
+        if (normalized === 'cancelled') payload.payment_status = 'cancelled';
+        else if (['paid', 'processing', 'shipped', 'delivered'].includes(normalized)) payload.payment_status = 'approved';
+        else if (normalized === 'pending') payload.payment_status = 'pending';
+      }
+
       if (!Object.keys(payload).length) {
         return res.status(400).json({ success: false, message: 'Nenhum campo para atualizar' });
       }
