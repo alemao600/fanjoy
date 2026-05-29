@@ -61,7 +61,7 @@
         <div id="price" class="price"></div>
 
         <div id="sizesWrap" style="margin-bottom:4px;">
-          <div style="font-size:13px;color:#6b7280;font-weight:700;margin-bottom:8px;">TAMANHO</div>
+          <div id="variantLabel" style="font-size:13px;color:#6b7280;font-weight:700;margin-bottom:8px;">VARIANTE</div>
           <div class="sizes" id="sizes"></div>
         </div>
 
@@ -89,6 +89,7 @@
     let currentImageIndex = 0;
     let currentQty = 1;
     let selectedSize = null;
+    let variantMeta = { enabled: false, attributeName: "Variante", options: [] };
 
     function getProductIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -134,16 +135,27 @@
       const output = { ...product };
       const variantData = getVariantStoreForProduct(output);
       if (variantData) {
-        if (Array.isArray(variantData.sizes) && variantData.sizes.length) {
-          output.sizes = variantData.sizes;
-        }
-        if (variantData.variantStock && typeof variantData.variantStock === "object") {
-          output.variantStock = variantData.variantStock;
+        if (Array.isArray(variantData.options)) {
+          variantMeta = {
+            enabled: !!variantData.enabled,
+            attributeName: variantData.attributeName || "Variante",
+            options: variantData.options.filter((o) => String(o?.value || "").trim())
+          };
+        } else {
+          const legacyStock = variantData.variantStock && typeof variantData.variantStock === "object" ? variantData.variantStock : {};
+          const legacySizes = Array.isArray(variantData.sizes) ? variantData.sizes : Object.keys(legacyStock);
+          variantMeta = {
+            enabled: legacySizes.length > 0,
+            attributeName: "Tamanho",
+            options: legacySizes.map((size) => ({
+              value: size,
+              stock: Number(legacyStock[size] || 0),
+              image: ""
+            }))
+          };
         }
       }
-      if (!Array.isArray(output.sizes) || !output.sizes.length) {
-        output.sizes = ["P", "M", "G", "GG"];
-      }
+
       const isBtsShirt = String(output.name || "").toLowerCase().includes("camiseta bts");
       const fallback = [
           "assets/products/camiseta-bts/camiseta.png",
@@ -160,6 +172,7 @@
         output.images = images.length ? images : (output.image ? [output.image] : []);
       }
       if (!output.images || !output.images.length) output.images = [output.image || ""];
+      output.sizes = variantMeta.enabled ? variantMeta.options.map((o) => o.value) : [];
       return output;
     }
 
@@ -215,8 +228,16 @@
       if (!sizes.length) {
         sizesWrap.style.display = 'none';
       } else {
+        document.getElementById('variantLabel').textContent = String(variantMeta.attributeName || "Variante").toUpperCase();
         selectedSize = sizes[0];
-        document.getElementById('sizes').innerHTML = sizes.map((s, i) => `<button class="${i===0?'active':''}" onclick="selectSize('${s}', event)">${s}</button>`).join('');
+        document.getElementById('sizes').innerHTML = sizes.map((s, i) => {
+          const safe = JSON.stringify(String(s));
+          return `<button class="${i===0?'active':''}" onclick='selectSize(${safe}, event)'>${s}</button>`;
+        }).join('');
+        const firstOption = (variantMeta.options || []).find((o) => String(o.value) === String(selectedSize));
+        if (firstOption?.image) {
+          mainImage.src = firstOption.image;
+        }
       }
 
       const obs = document.getElementById('productObs');
@@ -235,6 +256,10 @@
       selectedSize = size;
       document.querySelectorAll('#sizes button').forEach((b) => b.classList.remove('active'));
       event.currentTarget.classList.add('active');
+      const option = (variantMeta.options || []).find((o) => String(o.value) === String(size));
+      if (option?.image) {
+        document.getElementById('mainImage').src = option.image;
+      }
     }
 
     function changeQty(delta) {

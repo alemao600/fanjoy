@@ -436,52 +436,30 @@
               <span class="muted" style="align-self:center;">Seleciona da galeria/celular ou do PC</span>
             </div>
             <input id="imageUploadInput" type="file" accept="image/*" multiple style="display:none" />
+            <input id="variantImageUploadInput" type="file" accept="image/*" style="display:none" />
             <div class="card" style="padding:10px;">
-              <label style="display:block;margin-bottom:8px;">Variantes (Tamanho e Estoque)</label>
-              <div id="variantRows" class="stack" style="gap:8px;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
-                  <label style="margin:0;">
-                    Tamanho
-                    <input value="P" disabled />
-                  </label>
-                  <label style="margin:0;">
-                    Estoque P
-                    <input class="variant-stock-input" data-size="P" type="number" min="0" value="0" />
-                  </label>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
-                  <label style="margin:0;">
-                    Tamanho
-                    <input value="M" disabled />
-                  </label>
-                  <label style="margin:0;">
-                    Estoque M
-                    <input class="variant-stock-input" data-size="M" type="number" min="0" value="0" />
-                  </label>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
-                  <label style="margin:0;">
-                    Tamanho
-                    <input value="G" disabled />
-                  </label>
-                  <label style="margin:0;">
-                    Estoque G
-                    <input class="variant-stock-input" data-size="G" type="number" min="0" value="0" />
-                  </label>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;">
-                  <label style="margin:0;">
-                    Tamanho
-                    <input value="GG" disabled />
-                  </label>
-                  <label style="margin:0;">
-                    Estoque GG
-                    <input class="variant-stock-input" data-size="GG" type="number" min="0" value="0" />
-                  </label>
-                </div>
+              <div class="btn-row" style="justify-content:space-between;align-items:center;">
+                <label style="margin:0;">Variantes do Produto</label>
+                <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
+                  <input id="variantEnabled" type="checkbox" style="width:auto;margin:0;" />
+                  Habilitar variantes
+                </label>
               </div>
-              <p class="muted" style="margin:8px 0 0;">
-                O estoque total será a soma automática de P + M + G + GG.
+              <div id="variantConfigWrap" class="stack" style="gap:8px;display:none;">
+                <label style="margin:0;">
+                  Nome da variante (ex: Tamanho, Cor, Voltagem)
+                  <input id="variantAttributeName" value="Tamanho" />
+                </label>
+                <div id="variantRows" class="stack" style="gap:8px;"></div>
+                <div class="btn-row">
+                  <button class="btn btn-secondary" type="button" onclick="addVariantOption()">+ Adicionar opção</button>
+                </div>
+                <p class="muted" style="margin:0;">
+                  Cada opção pode ter estoque e foto própria. Ex: Branco, Preto, Azul.
+                </p>
+              </div>
+              <p class="muted" id="variantDisabledHint" style="margin:8px 0 0;">
+                Variantes desabilitadas: o produto terá estoque único e sem seletor na loja.
               </p>
             </div>
             <div>
@@ -643,6 +621,7 @@
     const STORAGE_CONTENT = "fanjoy_site_content";
     const STORAGE_THEME = "fanjoy_site_theme";
     const STORAGE_VARIANTS = "fanjoy_product_variants";
+    let variantImageTarget = null;
 
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -685,36 +664,140 @@
       localStorage.setItem(STORAGE_VARIANTS, JSON.stringify(store));
     }
 
-    function readVariantForm() {
-      const rows = Array.from(document.querySelectorAll(".variant-stock-input"));
-      const variantStock = {};
-      rows.forEach((input) => {
-        const size = input.dataset.size;
-        const value = Number(input.value || 0);
-        variantStock[size] = Math.max(0, Number.isFinite(value) ? value : 0);
+    function normalizeLegacyVariantData(data = {}) {
+      if (Array.isArray(data.options)) return data;
+      const options = [];
+      const legacyStock = data.variantStock && typeof data.variantStock === "object" ? data.variantStock : {};
+      const legacySizes = Array.isArray(data.sizes) ? data.sizes : Object.keys(legacyStock);
+      legacySizes.forEach((value) => {
+        const label = String(value || "").trim();
+        if (!label) return;
+        options.push({
+          value: label,
+          stock: Math.max(0, Number(legacyStock[label] || 0)),
+          image: ""
+        });
       });
-
-      const sizes = Object.keys(variantStock).filter((size) => variantStock[size] > 0);
-      const total = Object.values(variantStock).reduce((sum, qty) => sum + qty, 0);
-      return { sizes, variantStock, total };
+      return {
+        enabled: options.length > 0,
+        attributeName: "Tamanho",
+        options
+      };
     }
 
-    function writeVariantForm(data = {}) {
-      const sizes = Array.isArray(data.sizes) ? data.sizes : [];
-      const variantStock = data.variantStock && typeof data.variantStock === "object" ? data.variantStock : {};
-      document.querySelectorAll(".variant-stock-input").forEach((input) => {
-        const size = input.dataset.size;
-        const byStock = Number(variantStock[size]);
-        if (Number.isFinite(byStock)) {
-          input.value = Math.max(0, byStock);
-        } else {
-          input.value = sizes.includes(size) ? 1 : 0;
-        }
+    function createVariantOptionRow(option = {}) {
+      const value = String(option.value || "").trim();
+      const stock = Math.max(0, Number(option.stock || 0));
+      const image = String(option.image || "").trim();
+      return `
+        <div class="variant-option-row" style="display:grid;grid-template-columns:1fr 110px 1fr auto auto;gap:8px;align-items:end;">
+          <label style="margin:0;">
+            Opção
+            <input class="variant-value-input" value="${value}" placeholder="Ex: P, Branco, 220V" />
+          </label>
+          <label style="margin:0;">
+            Estoque
+            <input class="variant-stock-input" type="number" min="0" value="${stock}" />
+          </label>
+          <label style="margin:0;">
+            Foto da variante (URL)
+            <input class="variant-image-input" value="${image}" placeholder="https://... (opcional)" />
+          </label>
+          <button class="btn btn-secondary" type="button" onclick="pickVariantImage(this)">Foto</button>
+          <button class="btn btn-danger" type="button" onclick="removeVariantOption(this)">Remover</button>
+        </div>
+      `;
+    }
+
+    function renderVariantOptions(options = []) {
+      const rows = document.getElementById("variantRows");
+      if (!rows) return;
+      rows.innerHTML = (options.length ? options : [{ value: "", stock: 0, image: "" }])
+        .map((opt) => createVariantOptionRow(opt))
+        .join("");
+      rows.querySelectorAll(".variant-stock-input").forEach((input) => {
+        input.addEventListener("input", syncTotalStockFromVariants);
       });
+    }
+
+    function toggleVariantConfig() {
+      const enabled = !!document.getElementById("variantEnabled")?.checked;
+      const wrap = document.getElementById("variantConfigWrap");
+      const hint = document.getElementById("variantDisabledHint");
+      if (wrap) wrap.style.display = enabled ? "flex" : "none";
+      if (hint) hint.style.display = enabled ? "none" : "block";
       syncTotalStockFromVariants();
     }
 
+    function addVariantOption() {
+      const rows = document.getElementById("variantRows");
+      if (!rows) return;
+      rows.insertAdjacentHTML("beforeend", createVariantOptionRow({}));
+      const lastStock = rows.querySelector(".variant-option-row:last-child .variant-stock-input");
+      if (lastStock) lastStock.addEventListener("input", syncTotalStockFromVariants);
+    }
+
+    function removeVariantOption(btn) {
+      const row = btn?.closest(".variant-option-row");
+      if (row) row.remove();
+      const rows = document.getElementById("variantRows");
+      if (rows && !rows.children.length) rows.insertAdjacentHTML("beforeend", createVariantOptionRow({}));
+      syncTotalStockFromVariants();
+    }
+
+    function pickVariantImage(btn) {
+      const row = btn?.closest(".variant-option-row");
+      const input = row?.querySelector(".variant-image-input");
+      if (!input) return;
+      variantImageTarget = input;
+      document.getElementById("variantImageUploadInput").click();
+    }
+
+    async function handleVariantImageUpload(fileList) {
+      const file = Array.from(fileList || []).find((f) => f.type.startsWith("image/"));
+      if (!file || !variantImageTarget) return;
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        variantImageTarget.value = dataUrl;
+        setStatus("productStatus", "Foto da variante adicionada.");
+      } catch (error) {
+        setStatus("productStatus", `Erro ao carregar foto da variante: ${error.message}`, false);
+      } finally {
+        variantImageTarget = null;
+      }
+    }
+
+    function readVariantForm() {
+      const enabled = !!document.getElementById("variantEnabled")?.checked;
+      const attributeName = String(document.getElementById("variantAttributeName")?.value || "Tamanho").trim() || "Tamanho";
+      if (!enabled) {
+        const stock = Math.max(0, Number(document.getElementById("stock").value || 0));
+        return { enabled: false, attributeName, options: [], total: stock };
+      }
+
+      const rows = Array.from(document.querySelectorAll(".variant-option-row"));
+      const options = rows.map((row) => {
+        const value = String(row.querySelector(".variant-value-input")?.value || "").trim();
+        const stock = Math.max(0, Number(row.querySelector(".variant-stock-input")?.value || 0));
+        const image = String(row.querySelector(".variant-image-input")?.value || "").trim();
+        return { value, stock, image };
+      }).filter((opt) => opt.value);
+
+      const total = options.reduce((sum, opt) => sum + Number(opt.stock || 0), 0);
+      return { enabled: true, attributeName, options, total };
+    }
+
+    function writeVariantForm(data = {}) {
+      const normalized = normalizeLegacyVariantData(data);
+      document.getElementById("variantEnabled").checked = !!normalized.enabled;
+      document.getElementById("variantAttributeName").value = normalized.attributeName || "Tamanho";
+      renderVariantOptions(Array.isArray(normalized.options) ? normalized.options : []);
+      toggleVariantConfig();
+    }
+
     function syncTotalStockFromVariants() {
+      const enabled = !!document.getElementById("variantEnabled")?.checked;
+      if (!enabled) return;
       const { total } = readVariantForm();
       document.getElementById("stock").value = total;
     }
@@ -1158,10 +1241,7 @@
 
       const variantStore = getVariantStore();
       const stored = variantStore[p.id];
-      writeVariantForm({
-        sizes: p.sizes || stored?.sizes || [],
-        variantStock: p.variantStock || stored?.variantStock || {}
-      });
+      writeVariantForm(stored || {});
       const mode = document.getElementById("productEditorMode");
       if (mode) mode.textContent = `Editando: ${p.name}`;
       const cats = (p.categories || []).map((c) => c.name).filter(Boolean).join(", ");
@@ -1225,8 +1305,9 @@
       if (finalId) {
         const variantStore = getVariantStore();
         variantStore[finalId] = {
-          sizes: variantData.sizes,
-          variantStock: variantData.variantStock
+          enabled: !!variantData.enabled,
+          attributeName: variantData.attributeName || "Tamanho",
+          options: Array.isArray(variantData.options) ? variantData.options : []
         };
         saveVariantStore(variantStore);
       }
@@ -1412,9 +1493,8 @@
       renderOrders();
     });
     document.getElementById("imageUploadInput").addEventListener("change", (e) => handleProductImageUpload(e.target.files));
-    document.querySelectorAll(".variant-stock-input").forEach((input) => {
-      input.addEventListener("input", syncTotalStockFromVariants);
-    });
+    document.getElementById("variantImageUploadInput").addEventListener("change", (e) => handleVariantImageUpload(e.target.files));
+    document.getElementById("variantEnabled").addEventListener("change", toggleVariantConfig);
 
     loadAll();
     loadSiteContent();

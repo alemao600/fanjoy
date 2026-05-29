@@ -1320,18 +1320,25 @@
 
       const variantStore = JSON.parse(localStorage.getItem("fanjoy_product_variants") || "{}");
       const variantData = variantStore[clone.id] || variantStore[clone._id] || null;
+      clone.variant = { enabled: false, attributeName: "Variante", options: [] };
       if (variantData) {
-        if (Array.isArray(variantData.sizes) && variantData.sizes.length) {
-          clone.sizes = variantData.sizes;
-        }
-        if (variantData.variantStock && typeof variantData.variantStock === "object") {
-          clone.variantStock = variantData.variantStock;
+        if (Array.isArray(variantData.options)) {
+          clone.variant = {
+            enabled: !!variantData.enabled,
+            attributeName: variantData.attributeName || "Variante",
+            options: variantData.options.filter((o) => String(o?.value || "").trim())
+          };
+        } else {
+          const legacyStock = variantData.variantStock && typeof variantData.variantStock === "object" ? variantData.variantStock : {};
+          const legacySizes = Array.isArray(variantData.sizes) ? variantData.sizes : Object.keys(legacyStock);
+          clone.variant = {
+            enabled: legacySizes.length > 0,
+            attributeName: "Tamanho",
+            options: legacySizes.map((value) => ({ value, stock: Number(legacyStock[value] || 0), image: "" }))
+          };
         }
       }
-
-      if (!Array.isArray(clone.sizes) || !clone.sizes.length) {
-        clone.sizes = ["P", "M", "G", "GG"];
-      }
+      clone.sizes = clone.variant.enabled ? clone.variant.options.map((o) => o.value) : [];
 
       const isBtsShirt = String(clone.name || "").toLowerCase().includes("camiseta bts");
       const fallback = [
@@ -1395,6 +1402,7 @@
         const images = uniqueImages(product.images || [product.image]);
         const hasMultipleImages = images.length > 1;
         const sizeOptions = Array.isArray(product.sizes) ? product.sizes : [];
+        const variantLabel = product.variant?.attributeName || "Variante";
         const safeId = JSON.stringify(product.id);
         
         return `
@@ -1424,8 +1432,8 @@
             <p class="product-desc">${product.description}</p>
             ${sizeOptions.length ? `
               <div style="display:flex;align-items:center;gap:8px;margin:2px 0 4px;">
-                <label style="font-size:12px;color:#6b7280;font-weight:700;">Tamanho</label>
-                <select class="product-size-select" onclick="event.stopPropagation()" style="padding:7px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-weight:700;font-size:13px;">
+                <label style="font-size:12px;color:#6b7280;font-weight:700;">${variantLabel}</label>
+                <select class="product-size-select product-variant-select" onchange='setCardImageByVariant(${safeId}, this.value, event)' onclick="event.stopPropagation()" style="padding:7px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-weight:700;font-size:13px;">
                   ${sizeOptions.map((size, i) => `<option value="${size}" ${i === 0 ? 'selected' : ''}>${size}</option>`).join('')}
                 </select>
               </div>
@@ -1621,6 +1629,28 @@
           sizes: ['P', 'M', 'G', 'GG']
         }
       ];
+    }
+
+    function setCardImageByVariant(productId, value, event) {
+      if (event) event.stopPropagation();
+      const card = document.querySelector(`[data-product-id="${productId}"]`);
+      const product = allProducts.find((p) => String(p.id) === String(productId));
+      if (!card || !product) return;
+      const option = (product.variant?.options || []).find((o) => String(o.value) === String(value));
+      if (!option?.image) return;
+      const carousel = card.querySelector('.carousel-images');
+      if (carousel) {
+        const first = carousel.querySelector('img');
+        if (first) first.src = option.image;
+        const dots = card.querySelectorAll('.carousel-dot');
+        if (dots.length) {
+          dots.forEach((dot, i) => dot.classList.toggle('active', i === 0));
+          carousel.style.transform = 'translateX(0%)';
+        }
+      } else {
+        const main = card.querySelector('.product-image img');
+        if (main) main.src = option.image;
+      }
     }
 
     function attachTiltEffect() {
