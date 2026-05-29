@@ -74,9 +74,7 @@
           <button class="btn primary" onclick="addCurrentToCart()">Adicionar ao carrinho</button>
         </div>
 
-        <div class="obs" id="productObs">
-          <strong>Observações Importantes:</strong> devido a costura ser realizada com maquinário numa linha de produção, há um processo manual em que os tamanhos podem oscilar entre 1cm (um centímetro) e 2cm (dois centímetros) para mais ou para menos, por isso, recomendamos que solicite sempre um tamanho maior.
-        </div>
+        <div class="obs" id="productObs" style="display:none;"></div>
       </section>
     </div>
   </main>
@@ -90,6 +88,7 @@
     let currentQty = 1;
     let selectedSize = null;
     let variantMeta = { enabled: false, attributeName: "Variante", options: [] };
+    const DEFAULT_BTS_OBSERVATIONS = "Observações Importantes: devido a costura ser realizada com maquinário numa linha de produção, há um processo manual em que os tamanhos podem oscilar entre 1cm (um centímetro) e 2cm (dois centímetros) para mais ou para menos, por isso, recomendamos que solicite sempre um tamanho maior.";
 
     function getProductIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -103,6 +102,28 @@
       } catch {
         return null;
       }
+    }
+
+    function getProductExtrasForProduct(product) {
+      try {
+        const store = JSON.parse(localStorage.getItem("fanjoy_product_extras") || "{}");
+        return store[product.id] || store[product._id] || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function isBtsProduct(product) {
+      return String(product?.name || "").toLowerCase().includes("camiseta bts");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function buildImageKey(value) {
@@ -241,8 +262,18 @@
       }
 
       const obs = document.getElementById('productObs');
-      const isBtsShirt = String(currentProduct.name || "").toLowerCase().includes("camiseta bts");
-      obs.style.display = isBtsShirt ? 'block' : 'none';
+      const extra = getProductExtrasForProduct(currentProduct);
+      const fallbackEnabled = isBtsProduct(currentProduct);
+      const showObs = extra?.observationsEnabled !== undefined ? !!extra.observationsEnabled : fallbackEnabled;
+      const obsText = extra?.observationsText || (fallbackEnabled ? DEFAULT_BTS_OBSERVATIONS : "");
+      if (showObs && obsText) {
+        obs.style.display = 'block';
+        const cleanText = obsText.replace(/^Observações Importantes:\s*/i, "");
+        obs.innerHTML = `<strong>Observações Importantes:</strong> ${escapeHtml(cleanText)}`;
+      } else {
+        obs.style.display = 'none';
+        obs.textContent = '';
+      }
     }
 
     function setImage(index) {

@@ -424,6 +424,21 @@
             <input type="hidden" id="productId" />
             <label>Nome<input id="name" /></label>
             <label>Descrição<textarea id="description"></textarea></label>
+            <div class="card" style="padding:10px;">
+              <div class="btn-row" style="justify-content:space-between;align-items:center;">
+                <label style="margin:0;">Observações do Produto</label>
+                <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
+                  <input id="observationsEnabled" type="checkbox" style="width:auto;margin:0;" />
+                  Mostrar observações na página do produto
+                </label>
+              </div>
+              <div id="observationsWrap" style="display:none;margin-top:8px;">
+                <textarea id="observationsText" placeholder="Ex: Observações importantes, prazo de produção, cuidados, medidas ou qualquer detalhe específico deste produto."></textarea>
+              </div>
+              <p class="muted" id="observationsHint" style="margin:8px 0 0;">
+                Desabilitado: a página do produto não mostrará bloco de observações.
+              </p>
+            </div>
             <div class="grid" style="grid-template-columns:1fr 1fr;">
               <label>Preço (R$)<input id="price" type="number" min="0" step="0.01" /></label>
               <label>Estoque<input id="stock" type="number" min="0" /></label>
@@ -649,10 +664,16 @@
     const STORAGE_CONTENT = "fanjoy_site_content";
     const STORAGE_THEME = "fanjoy_site_theme";
     const STORAGE_VARIANTS = "fanjoy_product_variants";
+    const STORAGE_PRODUCT_EXTRAS = "fanjoy_product_extras";
+    const DEFAULT_BTS_OBSERVATIONS = "Observações Importantes: devido a costura ser realizada com maquinário numa linha de produção, há um processo manual em que os tamanhos podem oscilar entre 1cm (um centímetro) e 2cm (dois centímetros) para mais ou para menos, por isso, recomendamos que solicite sempre um tamanho maior.";
     let variantImageTarget = null;
 
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    document.getElementById("observationsEnabled")?.addEventListener("change", () => {
+      writeObservationsForm(readObservationsForm());
     });
 
     function switchTab(tab) {
@@ -690,6 +711,43 @@
 
     function saveVariantStore(store) {
       localStorage.setItem(STORAGE_VARIANTS, JSON.stringify(store));
+    }
+
+    function getProductExtrasStore() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_PRODUCT_EXTRAS) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveProductExtrasStore(store) {
+      localStorage.setItem(STORAGE_PRODUCT_EXTRAS, JSON.stringify(store));
+    }
+
+    function isBtsProduct(product) {
+      return String(product?.name || "").toLowerCase().includes("camiseta bts");
+    }
+
+    function writeObservationsForm(extra = {}, product = null) {
+      const fallbackEnabled = isBtsProduct(product);
+      const enabled = extra.observationsEnabled !== undefined ? !!extra.observationsEnabled : fallbackEnabled;
+      const text = extra.observationsText || (fallbackEnabled ? DEFAULT_BTS_OBSERVATIONS : "");
+      const enabledEl = document.getElementById("observationsEnabled");
+      const textEl = document.getElementById("observationsText");
+      const wrap = document.getElementById("observationsWrap");
+      const hint = document.getElementById("observationsHint");
+      if (enabledEl) enabledEl.checked = enabled;
+      if (textEl) textEl.value = text;
+      if (wrap) wrap.style.display = enabled ? "block" : "none";
+      if (hint) hint.textContent = enabled ? "Este texto aparecerá na página detalhada do produto." : "Desabilitado: a página do produto não mostrará bloco de observações.";
+    }
+
+    function readObservationsForm() {
+      return {
+        observationsEnabled: !!document.getElementById("observationsEnabled")?.checked,
+        observationsText: document.getElementById("observationsText")?.value.trim() || ""
+      };
     }
 
     function normalizeLegacyVariantData(data = {}) {
@@ -1199,11 +1257,12 @@
     }
 
     function resetProductForm() {
-      ["productId", "name", "description", "price", "stock", "tag", "buttonText", "images"].forEach((id) => {
+      ["productId", "name", "description", "price", "stock", "tag", "buttonText", "images", "observationsText"].forEach((id) => {
         document.getElementById(id).value = "";
       });
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => (c.checked = false));
       writeVariantForm({});
+      writeObservationsForm({});
       selectedProductId = null;
       const mode = document.getElementById("productEditorMode");
       if (mode) mode.textContent = "Novo produto";
@@ -1261,6 +1320,8 @@
       document.getElementById("tag").value = p.tag || "";
       document.getElementById("buttonText").value = p.buttonText || "Comprar";
       document.getElementById("images").value = (p.images || []).join("\n");
+      const extrasStore = getProductExtrasStore();
+      writeObservationsForm(extrasStore[p.id] || extrasStore[p._id] || {}, p);
 
       const catIds = new Set((p.categories || []).map((c) => c.id));
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => {
@@ -1338,6 +1399,10 @@
           options: Array.isArray(variantData.options) ? variantData.options : []
         };
         saveVariantStore(variantStore);
+
+        const extrasStore = getProductExtrasStore();
+        extrasStore[finalId] = readObservationsForm();
+        saveProductExtrasStore(extrasStore);
       }
 
       resetProductForm();
@@ -1355,6 +1420,9 @@
       const variantStore = getVariantStore();
       delete variantStore[id];
       saveVariantStore(variantStore);
+      const extrasStore = getProductExtrasStore();
+      delete extrasStore[id];
+      saveProductExtrasStore(extrasStore);
       await loadAll();
       const mode = res.data?.mode === "soft" ? "arquivado" : "excluído";
       setStatus("productStatus", `Produto ${mode} com sucesso.`);
