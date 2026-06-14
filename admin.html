@@ -641,11 +641,31 @@
           <input id="importFile" type="file" accept="application/json" style="display:none" />
           <span class="status" id="toolsStatus"></span>
         </div>
+
+        <div class="card stack">
+          <h3 style="margin:0;">Segurança do Painel</h3>
+          <p class="muted">Altere o usuário e a senha usados para entrar no painel administrativo.</p>
+          <div class="grid">
+            <label>Usuário atual<input id="adminCurrentUser" autocomplete="username" /></label>
+            <label>Senha atual<input id="adminCurrentPassword" type="password" autocomplete="current-password" /></label>
+          </div>
+          <div class="grid">
+            <label>Novo usuário<input id="adminNewUser" autocomplete="username" /></label>
+            <label>Nova senha<input id="adminNewPassword" type="password" autocomplete="new-password" /></label>
+            <label>Confirmar nova senha<input id="adminConfirmPassword" type="password" autocomplete="new-password" /></label>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" type="button" onclick="saveAdminCredentials()">Salvar nova senha</button>
+            <button class="btn btn-secondary" type="button" onclick="loadSecurityForm()">Recarregar</button>
+          </div>
+          <span class="status" id="securityStatus"></span>
+        </div>
       </div>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/admin-auth.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/api.js"></script>
   <script>
@@ -1607,6 +1627,42 @@
       setStatus("toolsStatus", "Configurações resetadas.");
     }
 
+    function loadSecurityForm() {
+      const credentials = window.FanjoyAdminAuth.getCredentials();
+      document.getElementById("adminCurrentUser").value = sessionStorage.getItem("fanjoy_admin_user") || credentials.username;
+      document.getElementById("adminCurrentPassword").value = "";
+      document.getElementById("adminNewUser").value = credentials.username;
+      document.getElementById("adminNewPassword").value = "";
+      document.getElementById("adminConfirmPassword").value = "";
+    }
+
+    function saveAdminCredentials() {
+      const currentUser = document.getElementById("adminCurrentUser").value.trim();
+      const currentPassword = document.getElementById("adminCurrentPassword").value;
+      const nextUser = document.getElementById("adminNewUser").value.trim();
+      const nextPassword = document.getElementById("adminNewPassword").value;
+      const confirmPassword = document.getElementById("adminConfirmPassword").value;
+
+      if (!window.FanjoyAdminAuth.validate(currentUser, currentPassword)) {
+        setStatus("securityStatus", "Usuário ou senha atual incorretos.", false);
+        return;
+      }
+      if (!nextUser || nextPassword.length < 6) {
+        setStatus("securityStatus", "Informe usuário e uma senha com pelo menos 6 caracteres.", false);
+        return;
+      }
+      if (nextPassword !== confirmPassword) {
+        setStatus("securityStatus", "A confirmação da senha não confere.", false);
+        return;
+      }
+
+      const credentials = window.FanjoyAdminAuth.updateCredentials(nextUser, nextPassword);
+      sessionStorage.setItem("fanjoy_admin_user", credentials.username);
+      sessionStorage.setItem("fanjoy_admin_token", credentials.apiToken);
+      loadSecurityForm();
+      setStatus("securityStatus", "Senha do painel atualizada.");
+    }
+
     function logout() {
       sessionStorage.removeItem("fanjoy_admin_logged");
       sessionStorage.removeItem("fanjoy_admin_user");
@@ -1635,6 +1691,7 @@
     loadAll();
     loadSiteContent();
     loadTheme();
+    loadSecurityForm();
     writeVariantForm({});
   </script>
 </body>

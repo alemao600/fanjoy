@@ -231,6 +231,7 @@
     </div>
   </div>
 
+  <script src="js/admin-auth.js"></script>
   <script>
     document.getElementById('loginForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -239,12 +240,12 @@
       const password = document.getElementById('password').value;
       const errorMessage = document.getElementById('errorMessage');
       
-      // Simple authentication
-      if (username === 'admin' && password === 'admin123') {
+      if (window.FanjoyAdminAuth.validate(username, password)) {
+        const credentials = window.FanjoyAdminAuth.getCredentials();
         // Set session
         sessionStorage.setItem('fanjoy_admin_logged', 'true');
-        sessionStorage.setItem('fanjoy_admin_user', username);
-        sessionStorage.setItem('fanjoy_admin_token', 'admin123');
+        sessionStorage.setItem('fanjoy_admin_user', credentials.username);
+        sessionStorage.setItem('fanjoy_admin_token', credentials.apiToken);
         
         // Redirect to admin panel
         window.location.href = 'admin.html';

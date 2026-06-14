@@ -23,8 +23,8 @@
 
   try {
     await page.goto(`${base}/login.html`, { waitUntil: 'domcontentloaded' });
-    await page.fill('#username', 'admin');
-    await page.fill('#password', 'admin123');
+    await page.fill('#username', 'Fanjoy');
+    await page.fill('#password', 'GabiDi$$$');
     await page.click('button[type="submit"]');
     await page.waitForURL(/admin\.html/, { timeout: 15000 });
     log('Admin login', /admin\.html/.test(page.url()));
