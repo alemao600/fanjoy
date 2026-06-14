@@ -34,6 +34,6 @@ Projeto limpo para deploy gratuito no Vercel com banco/auth no Supabase.
 3. Ajuste DNS no registrador conforme instruções do Vercel.
 
 ## Observações
-- Login admin continua local (`admin` / `admin123`) em `login.html`.
-- Mercado Pago backend foi removido nesta versão frontend-only.
-- Para pagamento real seguro, será necessário adicionar Edge Function/Backend.
+- Login admin é validado pelo backend com variáveis da Vercel (`ADMIN_USERNAME`, `ADMIN_PASSWORD` e `ADMIN_PANEL_TOKEN`).
+- Mercado Pago roda pelo backend em `/api/create-preference`, usando pedido validado no Supabase.
+- Segredos ficam em variáveis de ambiente da Vercel; não colocar tokens em arquivos públicos.

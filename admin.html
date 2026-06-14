@@ -644,32 +644,25 @@
 
         <div class="card stack">
           <h3 style="margin:0;">Segurança do Painel</h3>
-          <p class="muted">Altere o usuário e a senha usados para entrar no painel administrativo.</p>
+          <p class="muted">A senha do painel fica protegida nas variáveis de ambiente da Vercel. Para trocar, altere `ADMIN_USERNAME` e `ADMIN_PASSWORD` em Project Settings > Environment Variables e faça um novo deploy.</p>
           <div class="grid">
-            <label>Usuário atual<input id="adminCurrentUser" autocomplete="username" /></label>
-            <label>Senha atual<input id="adminCurrentPassword" type="password" autocomplete="current-password" /></label>
+            <label>Usuário em sessão<input id="adminCurrentUser" readonly /></label>
+            <label>Status<input value="Autenticação protegida pelo backend" readonly /></label>
           </div>
-          <div class="grid">
-            <label>Novo usuário<input id="adminNewUser" autocomplete="username" /></label>
-            <label>Nova senha<input id="adminNewPassword" type="password" autocomplete="new-password" /></label>
-            <label>Confirmar nova senha<input id="adminConfirmPassword" type="password" autocomplete="new-password" /></label>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-primary" type="button" onclick="saveAdminCredentials()">Salvar nova senha</button>
-            <button class="btn btn-secondary" type="button" onclick="loadSecurityForm()">Recarregar</button>
-          </div>
-          <span class="status" id="securityStatus"></span>
         </div>
       </div>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/admin-auth.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/api.js"></script>
   <script>
     if (sessionStorage.getItem("fanjoy_admin_logged") !== "true") {
+      window.location.href = "login.html";
+    }
+    if (!sessionStorage.getItem("fanjoy_admin_token")) {
+      sessionStorage.removeItem("fanjoy_admin_logged");
       window.location.href = "login.html";
     }
 
@@ -710,6 +703,15 @@
       setTimeout(() => {
         if (el.textContent === message) el.textContent = "";
       }, 3500);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function slugify(value) {
@@ -938,7 +940,11 @@
       if (!rows) return;
       rows.innerHTML = `<div class="muted">Carregando pedidos...</div>`;
       try {
-        const adminToken = sessionStorage.getItem("fanjoy_admin_token") || "admin123";
+        const adminToken = sessionStorage.getItem("fanjoy_admin_token");
+        if (!adminToken) {
+          window.location.href = "login.html";
+          return;
+        }
         const resp = await fetch("/api/admin-orders", {
           headers: { "x-admin-token": adminToken }
         });
@@ -1040,26 +1046,27 @@
         const customer = o.customers || {};
         const address = o.shipping_address || {};
         const orderItems = o.order_items || [];
-        const itemsPreview = orderItems.map((it) => `${it.products?.name || "Produto"} x${it.quantity}`).join(", ");
+        const itemsPreview = orderItems.map((it) => `${escapeHtml(it.products?.name || "Produto")} x${Number(it.quantity || 0)}`).join(", ");
         const currentStatus = o.status || "pending";
+        const orderId = escapeHtml(o.id);
         return `
           <div class="order-modern-card">
             <div class="order-modern-top">
               <div>
-                <div class="order-modern-title">${o.order_number || o.id}</div>
+                <div class="order-modern-title">${escapeHtml(o.order_number || o.id)}</div>
                 <div class="order-modern-sub">${new Date(o.created_at).toLocaleString("pt-BR")}</div>
                 <div class="order-modern-sub">${itemsPreview || "Itens não encontrados"}</div>
               </div>
               <div>
-                <div><strong>${customer.name || "Cliente"}</strong></div>
-                <div class="order-modern-sub">${customer.email || ""}</div>
-                <div class="order-modern-sub">${customer.phone || "Sem telefone"}</div>
-                <div class="order-modern-sub">${address.cep || ""} ${address.city || ""}/${address.state || ""}</div>
+                <div><strong>${escapeHtml(customer.name || "Cliente")}</strong></div>
+                <div class="order-modern-sub">${escapeHtml(customer.email || "")}</div>
+                <div class="order-modern-sub">${escapeHtml(customer.phone || "Sem telefone")}</div>
+                <div class="order-modern-sub">${escapeHtml(address.cep || "")} ${escapeHtml(address.city || "")}/${escapeHtml(address.state || "")}</div>
                 <div class="order-modern-sub">
-                  ${address.street || "Rua não informada"}, ${address.number || "s/n"}${address.complement ? ` - ${address.complement}` : ""}
+                  ${escapeHtml(address.street || "Rua não informada")}, ${escapeHtml(address.number || "s/n")}${address.complement ? ` - ${escapeHtml(address.complement)}` : ""}
                 </div>
                 <div class="order-modern-sub">
-                  ${address.neighborhood || "Bairro não informado"}
+                  ${escapeHtml(address.neighborhood || "Bairro não informado")}
                 </div>
               </div>
               <div>
@@ -1073,7 +1080,7 @@
             </div>
             <div class="order-modern-actions">
               <div class="btn-row" style="gap:8px;">
-                <select id="orderStatus-${o.id}">
+                <select id="orderStatus-${orderId}">
                   <option value="pending" ${currentStatus === "pending" ? "selected" : ""}>Pendente</option>
                   <option value="paid" ${currentStatus === "paid" ? "selected" : ""}>Pago</option>
                   <option value="processing" ${currentStatus === "processing" ? "selected" : ""}>Em separação</option>
@@ -1081,10 +1088,10 @@
                   <option value="delivered" ${currentStatus === "delivered" ? "selected" : ""}>Entregue</option>
                   <option value="cancelled" ${currentStatus === "cancelled" ? "selected" : ""}>Cancelado</option>
                 </select>
-                <input id="track-${o.id}" placeholder="Código de rastreio" value="${o.tracking_code || ""}" />
+                <input id="track-${orderId}" placeholder="Código de rastreio" value="${escapeHtml(o.tracking_code || "")}" />
               </div>
-              <button class="btn btn-primary" onclick="saveOrderUpdate('${o.id}')">Salvar</button>
-              <button class="btn btn-secondary" onclick="openShippingGuide('${o.id}')">Etiqueta</button>
+              <button class="btn btn-primary" onclick="saveOrderUpdate('${orderId}')">Salvar</button>
+              <button class="btn btn-secondary" onclick="openShippingGuide('${orderId}')">Etiqueta</button>
             </div>
           </div>
         `;
@@ -1105,7 +1112,11 @@
       const status = document.getElementById(`orderStatus-${orderId}`)?.value || "pending";
       const tracking = document.getElementById(`track-${orderId}`)?.value || "";
       try {
-        const adminToken = sessionStorage.getItem("fanjoy_admin_token") || "admin123";
+        const adminToken = sessionStorage.getItem("fanjoy_admin_token");
+        if (!adminToken) {
+          window.location.href = "login.html";
+          return;
+        }
         const resp = await fetch("/api/admin-orders", {
           method: "PATCH",
           headers: {
@@ -1627,42 +1638,6 @@
       setStatus("toolsStatus", "Configurações resetadas.");
     }
 
-    function loadSecurityForm() {
-      const credentials = window.FanjoyAdminAuth.getCredentials();
-      document.getElementById("adminCurrentUser").value = sessionStorage.getItem("fanjoy_admin_user") || credentials.username;
-      document.getElementById("adminCurrentPassword").value = "";
-      document.getElementById("adminNewUser").value = credentials.username;
-      document.getElementById("adminNewPassword").value = "";
-      document.getElementById("adminConfirmPassword").value = "";
-    }
-
-    function saveAdminCredentials() {
-      const currentUser = document.getElementById("adminCurrentUser").value.trim();
-      const currentPassword = document.getElementById("adminCurrentPassword").value;
-      const nextUser = document.getElementById("adminNewUser").value.trim();
-      const nextPassword = document.getElementById("adminNewPassword").value;
-      const confirmPassword = document.getElementById("adminConfirmPassword").value;
-
-      if (!window.FanjoyAdminAuth.validate(currentUser, currentPassword)) {
-        setStatus("securityStatus", "Usuário ou senha atual incorretos.", false);
-        return;
-      }
-      if (!nextUser || nextPassword.length < 6) {
-        setStatus("securityStatus", "Informe usuário e uma senha com pelo menos 6 caracteres.", false);
-        return;
-      }
-      if (nextPassword !== confirmPassword) {
-        setStatus("securityStatus", "A confirmação da senha não confere.", false);
-        return;
-      }
-
-      const credentials = window.FanjoyAdminAuth.updateCredentials(nextUser, nextPassword);
-      sessionStorage.setItem("fanjoy_admin_user", credentials.username);
-      sessionStorage.setItem("fanjoy_admin_token", credentials.apiToken);
-      loadSecurityForm();
-      setStatus("securityStatus", "Senha do painel atualizada.");
-    }
-
     function logout() {
       sessionStorage.removeItem("fanjoy_admin_logged");
       sessionStorage.removeItem("fanjoy_admin_user");
@@ -1691,7 +1666,8 @@
     loadAll();
     loadSiteContent();
     loadTheme();
-    loadSecurityForm();
+    const adminUserInput = document.getElementById("adminCurrentUser");
+    if (adminUserInput) adminUserInput.value = sessionStorage.getItem("fanjoy_admin_user") || "Admin";
     writeVariantForm({});
   </script>
 </body>

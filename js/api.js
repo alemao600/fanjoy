@@ -256,6 +256,16 @@
       } catch {
         return false;
       }
+    },
+
+    async getAccessToken() {
+      const { data } = await sb.auth.getSession();
+      if (data?.session?.access_token) {
+        writeSessionBackup(data.session);
+        return data.session.access_token;
+      }
+      const backup = readSessionBackup();
+      return backup?.access_token || null;
     }
   };
 

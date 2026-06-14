@@ -259,9 +259,18 @@ async function checkout() {
   const orderId = orderResp.data._id || orderResp.data.id;
 
   const baseUrl = window.location.origin;
+  const accessToken = await FanjoyAPI.Auth.getAccessToken();
+  if (!accessToken) {
+    alert('Sessão expirada. Faça login novamente.');
+    window.location.href = 'customer-login.html?next=cart.html';
+    return;
+  }
   const resp = await fetch('/api/create-preference', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`
+    },
     body: JSON.stringify({
       orderId,
       customerEmail: customer?.email || null,

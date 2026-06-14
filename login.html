@@ -231,31 +231,38 @@
     </div>
   </div>
 
-  <script src="js/admin-auth.js"></script>
   <script>
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
       const errorMessage = document.getElementById('errorMessage');
-      
-      if (window.FanjoyAdminAuth.validate(username, password)) {
-        const credentials = window.FanjoyAdminAuth.getCredentials();
-        // Set session
+
+      try {
+        const resp = await fetch('/api/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+          errorMessage.textContent = data.message || 'Usuário ou senha incorretos';
+          errorMessage.classList.add('show');
+          setTimeout(() => errorMessage.classList.remove('show'), 3500);
+          return;
+        }
+
         sessionStorage.setItem('fanjoy_admin_logged', 'true');
-        sessionStorage.setItem('fanjoy_admin_user', credentials.username);
-        sessionStorage.setItem('fanjoy_admin_token', credentials.apiToken);
+        sessionStorage.setItem('fanjoy_admin_user', data.data.username);
+        sessionStorage.setItem('fanjoy_admin_token', data.data.token);
         
-        // Redirect to admin panel
         window.location.href = 'admin.html';
-      } else {
-        // Show error
+      } catch (error) {
+        errorMessage.textContent = 'Erro ao fazer login. Tente novamente.';
         errorMessage.classList.add('show');
-        
-        setTimeout(() => {
-          errorMessage.classList.remove('show');
-        }, 3000);
+        setTimeout(() => errorMessage.classList.remove('show'), 3500);
       }
     });
 

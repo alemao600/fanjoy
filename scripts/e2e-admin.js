@@ -23,8 +23,8 @@
 
   try {
     await page.goto(`${base}/login.html`, { waitUntil: 'domcontentloaded' });
-    await page.fill('#username', 'Fanjoy');
-    await page.fill('#password', 'GabiDi$$$');
+    await page.fill('#username', process.env.E2E_ADMIN_USERNAME || 'Fanjoy');
+    await page.fill('#password', process.env.E2E_ADMIN_PASSWORD || '');
     await page.click('button[type="submit"]');
     await page.waitForURL(/admin\.html/, { timeout: 15000 });
     log('Admin login', /admin\.html/.test(page.url()));

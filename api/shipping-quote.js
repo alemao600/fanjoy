@@ -24,22 +24,25 @@
       return res.status(400).json({ success: false, message: 'CEP de destino inválido' });
     }
 
-    if (!products.length) {
+    if (!products.length || products.length > 20) {
       return res.status(400).json({ success: false, message: 'Produtos inválidos para cálculo' });
     }
 
     const payload = {
       from: { postal_code: fromCep },
       to: { postal_code: toPostalCode },
-      products: products.map((p) => ({
-        id: String(p.id || 'item'),
-        width: Number(p.width || 25),
-        height: Number(p.height || 3),
-        length: Number(p.length || 30),
-        weight: Number(p.weight || 0.3),
-        insurance_value: Number(p.insurance_value || 0),
-        quantity: Number(p.quantity || 1)
-      }))
+      products: products.map((p) => {
+        const quantity = Math.min(50, Math.max(1, Number(p.quantity || 1)));
+        return {
+          id: String(p.id || 'item').slice(0, 80),
+          width: Math.min(100, Math.max(1, Number(p.width || 25))),
+          height: Math.min(100, Math.max(1, Number(p.height || 3))),
+          length: Math.min(100, Math.max(1, Number(p.length || 30))),
+          weight: Math.min(30, Math.max(0.01, Number(p.weight || 0.3))),
+          insurance_value: Math.min(10000, Math.max(0, Number(p.insurance_value || 0))),
+          quantity
+        };
+      })
     };
 
     const response = await fetch(`${baseUrl}/api/v2/me/shipment/calculate`, {
