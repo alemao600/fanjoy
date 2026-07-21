@@ -12,6 +12,14 @@
     console.log(`${ok ? 'PASS' : 'FAIL'} - ${step}${detail ? ' :: ' + detail : ''}`);
   }
 
+  async function waitForPath(pathname, timeout = 20000) {
+    await page.waitForFunction(
+      (expected) => window.location.pathname.endsWith(expected),
+      pathname,
+      { timeout }
+    );
+  }
+
   const dialogs = [];
   page.on('dialog', async (d) => {
     dialogs.push(d.message());
@@ -48,15 +56,15 @@
     await page.fill('#registerPassword', 'Senha123!');
     await page.fill('#registerConfirmPassword', 'Senha123!');
     await page.click('#registerForm button[type="submit"]');
-    await page.waitForURL(/cart\.html/, { timeout: 30000 });
-    log('Register logs in and returns to cart', /cart\.html/.test(page.url()), `${unique} :: ${page.url()}`);
+    await waitForPath('/cart.html', 30000);
+    log('Register logs in and returns to cart', page.url().includes('/cart.html'), `${unique} :: ${page.url()}`);
 
     await page.fill('#shippingCep', '01310-200');
     await page.click('button:has-text("Calcular")');
     await page.waitForTimeout(1200);
     dialogs.length = 0;
     await page.click('button:has-text("Finalizar compra")');
-    await page.waitForURL(/customer-profile\.html/, { timeout: 20000 });
+    await waitForPath('/customer-profile.html');
     log('Checkout without address opens address tab', /tab=addresses/.test(page.url()), `${dialogs.join(' | ')} :: ${page.url()}`);
 
     await page.waitForLoadState('domcontentloaded');
@@ -70,8 +78,8 @@
     await page.fill('#addressCity', 'Sao Paulo');
     await page.selectOption('#addressState', 'SP');
     await page.click('#addressForm button[type="submit"]');
-    await page.waitForURL(/cart\.html/, { timeout: 20000 });
-    log('Save address returns to cart', /cart\.html/.test(page.url()), page.url());
+    await waitForPath('/cart.html');
+    log('Save address returns to cart', page.url().includes('/cart.html'), page.url());
 
     if ((await page.locator('.item').count()) === 0) {
       await page.goto(`${base}/index.html`, { waitUntil: 'domcontentloaded' });
