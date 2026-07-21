@@ -121,7 +121,7 @@
     await page.waitForSelector('#tab-orders.active');
     await page.click('#tab-orders button:has-text("Atualizar")');
     await page.waitForTimeout(1500);
-    const orderRows = await page.locator('#ordersRows tr').count();
+    const orderRows = await page.locator('#ordersRows .order-modern-card').count();
     log('Aba pedidos carrega', orderRows > 0, `linhas=${orderRows}`);
 
     // Cleanup: delete product
