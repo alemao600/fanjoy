@@ -1,6 +1,42 @@
 ﻿let currentCustomer = null;
 let editingAddressId = null;
 let customerOrders = [];
+function getQueryParams() {
+  return new URLSearchParams(window.location.search);
+}
+
+function getSafeInternalPath(value, fallback = 'customer-profile.html') {
+  const raw = String(value || '').trim();
+  if (!raw || raw.startsWith('http') || raw.startsWith('//')) return fallback;
+  return raw.replace(/^\/+/, '') || fallback;
+}
+
+function getProfileNextUrl() {
+  const params = getQueryParams();
+  return getSafeInternalPath(
+    params.get('next') || sessionStorage.getItem('fanjoy_after_profile_redirect'),
+    'customer-profile.html'
+  );
+}
+
+function shouldReturnToCheckoutAfterAddress() {
+  const next = getProfileNextUrl();
+  return next.includes('cart.html') && sessionStorage.getItem('fanjoy_checkout_needs_address') === 'true';
+}
+
+function updateProfileCartCount() {
+  const badge = document.getElementById('profileCartCount');
+  if (!badge) return;
+  try {
+    const cart = JSON.parse(localStorage.getItem('fanjoy_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    badge.textContent = String(count);
+    badge.hidden = count <= 0;
+  } catch {
+    badge.textContent = '0';
+    badge.hidden = true;
+  }
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((btn) => btn.classList.remove('active'));
@@ -143,10 +179,20 @@ async function resumeOrderPayment(orderId) {
   const payerAddress = (currentCustomer?.addresses || []).find((a) => a.isDefault) || (currentCustomer?.addresses || [])[0] || {};
   const fullName = `${currentCustomer?.name || ''} ${currentCustomer?.lastName || ''}`.trim();
   const baseUrl = window.location.origin;
+  const accessToken = await FanjoyAPI.Auth.getAccessToken();
+  if (!accessToken) {
+    sessionStorage.setItem('fanjoy_after_login_redirect', 'customer-profile.html?tab=orders');
+    alert('Sessão expirada. Faça login novamente.');
+    window.location.href = `customer-login.html?next=${encodeURIComponent('customer-profile.html?tab=orders')}`;
+    return;
+  }
 
   const resp = await fetch('/api/create-preference', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`
+    },
     body: JSON.stringify({
       orderId: order.id,
       customerEmail: currentCustomer?.email || null,
@@ -217,7 +263,8 @@ async function loadCustomerData() {
   const response = await FanjoyAPI.Customers.getProfile();
   if (!response.success) {
     alert('Sessão expirada. Faça login novamente.');
-    await FanjoyAPI.Auth.logout();
+    sessionStorage.setItem('fanjoy_after_login_redirect', `customer-profile.html${window.location.search || ''}`);
+    window.location.href = `customer-login.html?next=${encodeURIComponent(`customer-profile.html${window.location.search || ''}`)}`;
     return;
   }
 
@@ -309,6 +356,16 @@ async function saveAddress(e) {
   currentCustomer = response.data;
   renderAddresses();
   closeAddressModal();
+  if (shouldReturnToCheckoutAfterAddress()) {
+    const next = getProfileNextUrl();
+    sessionStorage.removeItem('fanjoy_checkout_needs_address');
+    sessionStorage.removeItem('fanjoy_after_profile_redirect');
+    showSuccessMessage('Endereço salvo. Voltando para o carrinho...');
+    setTimeout(() => {
+      window.location.href = next;
+    }, 700);
+    return;
+  }
   showSuccessMessage('Endereço salvo com sucesso!');
 }
 
@@ -333,8 +390,12 @@ async function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  updateProfileCartCount();
+
   if (!FanjoyAPI.Auth.isAuthenticated || !FanjoyAPI.Auth.isAuthenticated()) {
-    window.location.href = 'customer-login.html';
+    const params = getQueryParams();
+    const next = params.get('next') || `customer-profile.html${window.location.search || ''}`;
+    window.location.href = `customer-login.html?next=${encodeURIComponent(getSafeInternalPath(next))}`;
     return;
   }
 
@@ -347,4 +408,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await loadCustomerData();
+  const tab = getQueryParams().get('tab');
+  if (['profile', 'addresses', 'orders'].includes(tab)) switchTab(tab);
 });

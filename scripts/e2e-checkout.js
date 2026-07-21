@@ -35,12 +35,11 @@
     await page.waitForTimeout(1200);
     dialogs.length = 0;
     await page.click('button:has-text("Finalizar compra")');
-    await page.waitForTimeout(1200);
+    await page.waitForURL(/customer-login\.html/, { timeout: 20000 });
     const blockedByLogin = dialogs.some((m) => /login para finalizar/i.test(m));
-    log('Checkout blocks when not logged', blockedByLogin, dialogs.join(' | '));
+    log('Checkout blocks when not logged and opens login', blockedByLogin, `${dialogs.join(' | ')} :: ${page.url()}`);
 
     const unique = `teste_${Date.now()}@mailinator.com`;
-    await page.goto(`${base}/customer-login.html`, { waitUntil: 'domcontentloaded' });
     await page.click('button:has-text("Cadastrar")');
     await page.fill('#registerName', 'Teste');
     await page.fill('#registerLastName', 'Automacao');
@@ -49,25 +48,18 @@
     await page.fill('#registerPassword', 'Senha123!');
     await page.fill('#registerConfirmPassword', 'Senha123!');
     await page.click('#registerForm button[type="submit"]');
-    await page.waitForTimeout(1800);
-    const regSuccess = (await page.locator('#registerSuccess.show').count()) > 0;
-    log('Register new user', regSuccess, unique);
+    await page.waitForURL(/cart\.html/, { timeout: 30000 });
+    log('Register logs in and returns to cart', /cart\.html/.test(page.url()), `${unique} :: ${page.url()}`);
 
-    await page.click('button:has-text("Entrar")');
-    await page.fill('#loginEmail', unique);
-    await page.fill('#loginPassword', 'Senha123!');
-    await page.click('#loginForm button[type="submit"]');
-    await page.waitForURL(/customer-profile\.html|cart\.html/, { timeout: 20000 });
-    const logged = /customer-profile\.html|cart\.html/.test(page.url());
-    log('Login new user', logged, page.url());
+    await page.fill('#shippingCep', '01310-200');
+    await page.click('button:has-text("Calcular")');
+    await page.waitForTimeout(1200);
+    dialogs.length = 0;
+    await page.click('button:has-text("Finalizar compra")');
+    await page.waitForURL(/customer-profile\.html/, { timeout: 20000 });
+    log('Checkout without address opens address tab', /tab=addresses/.test(page.url()), `${dialogs.join(' | ')} :: ${page.url()}`);
 
-    if (!/customer-profile\.html/.test(page.url())) {
-      await page.goto(`${base}/customer-profile.html`, { waitUntil: 'domcontentloaded' });
-    }
     await page.waitForLoadState('domcontentloaded');
-    await page.evaluate(() => {
-      if (typeof window.switchTab === 'function') window.switchTab('addresses');
-    });
     await page.waitForTimeout(300);
     await page.click('button:has-text("Adicionar Endereço")');
     await page.fill('#addressLabel', 'Casa');
@@ -78,11 +70,9 @@
     await page.fill('#addressCity', 'Sao Paulo');
     await page.selectOption('#addressState', 'SP');
     await page.click('#addressForm button[type="submit"]');
-    await page.waitForTimeout(1800);
-    const hasAddressCard = (await page.locator('.address-card').count()) > 0;
-    log('Save address', hasAddressCard);
+    await page.waitForURL(/cart\.html/, { timeout: 20000 });
+    log('Save address returns to cart', /cart\.html/.test(page.url()), page.url());
 
-    await page.goto(`${base}/cart.html`, { waitUntil: 'domcontentloaded' });
     if ((await page.locator('.item').count()) === 0) {
       await page.goto(`${base}/index.html`, { waitUntil: 'domcontentloaded' });
       await page.click('.product-card .product-btn');

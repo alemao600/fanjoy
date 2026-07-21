@@ -39,6 +39,33 @@
       font-size:20px;
     }
     .top-brand img{width:34px;height:34px;border-radius:50%;object-fit:cover}
+    .top-cart{
+      position:fixed;
+      top:16px;
+      right:18px;
+      z-index:2;
+      color:#1a1a2e;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(255,255,255,.45);
+      border-radius:12px;
+      padding:10px 16px;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow:0 12px 30px rgba(0,0,0,.12);
+    }
+    .top-cart span{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:20px;
+      height:20px;
+      margin-left:6px;
+      padding:0 6px;
+      border-radius:999px;
+      background:#ff6bce;
+      color:#fff;
+      font-size:12px;
+    }
 
     body::before {
       content: '';
@@ -289,6 +316,7 @@
     <img src="logo.png" alt="Fanjoy">
     <span>Fanjoy</span>
   </a>
+  <a class="top-cart" href="cart.html">Carrinho <span id="loginCartCount" hidden>0</span></a>
   <div class="auth-container">
     <div class="auth-header">
       <div class="auth-logo">Fanjoy</div>

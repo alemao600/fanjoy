@@ -224,8 +224,11 @@ async function checkout() {
   const total = subtotal + shipping;
 
   if (!customer.addresses || !customer.addresses.length) {
+    sessionStorage.setItem('fanjoy_checkout_redirect', 'true');
+    sessionStorage.setItem('fanjoy_checkout_needs_address', 'true');
+    sessionStorage.setItem('fanjoy_after_profile_redirect', 'cart.html');
     alert('Adicione um endereço no seu perfil antes de pagar.');
-    window.location.href = 'customer-profile.html';
+    window.location.href = 'customer-profile.html?tab=addresses&next=cart.html';
     return;
   }
 

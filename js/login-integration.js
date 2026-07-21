@@ -3,6 +3,8 @@
 // ========================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  updateLoginCartCount();
+
   if (FanjoyAPI.Auth.isAuthenticated && FanjoyAPI.Auth.isAuthenticated()) {
     window.location.href = getPostLoginRedirectUrl();
     return;
@@ -28,6 +30,20 @@ function getPostLoginRedirectUrl() {
   if (next) return next;
   if (isCheckoutRedirect) return 'cart.html';
   return 'customer-profile.html';
+}
+
+function updateLoginCartCount() {
+  const badge = document.getElementById('loginCartCount');
+  if (!badge) return;
+  try {
+    const cart = JSON.parse(localStorage.getItem('fanjoy_cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    badge.textContent = String(count);
+    badge.hidden = count <= 0;
+  } catch {
+    badge.textContent = '0';
+    badge.hidden = true;
+  }
 }
 
 async function handleLogin(e) {
@@ -130,11 +146,28 @@ async function handleRegister(e) {
     const response = await FanjoyAPI.Auth.register({ name, lastName, email, phone, password });
 
     if (response.success) {
-      showMessage('registerSuccess', 'Conta criada com sucesso! Faca login para continuar.');
+      showMessage('registerSuccess', 'Conta criada com sucesso! Entrando automaticamente...');
       document.getElementById('registerForm').reset();
 
+      const loginResponse = await FanjoyAPI.Auth.login({ email, password });
+      if (loginResponse.success) {
+        const customer = loginResponse.data.customer;
+        sessionStorage.setItem('fanjoy_customer_logged', 'true');
+        sessionStorage.setItem('fanjoy_customer_id', customer._id);
+        sessionStorage.setItem('fanjoy_customer_name', customer.name);
+
+        setTimeout(() => {
+          const redirectUrl = getPostLoginRedirectUrl();
+          sessionStorage.removeItem('fanjoy_after_login_redirect');
+          sessionStorage.removeItem('fanjoy_checkout_redirect');
+          window.location.href = redirectUrl;
+        }, 700);
+        return;
+      }
+
+      showMessage('registerSuccess', 'Conta criada. Faça login para continuar.');
       setTimeout(() => {
-        document.querySelector('.tab-btn:first-child').click();
+        document.querySelector('.tab-btn:first-child')?.click();
         document.getElementById('loginEmail').value = email;
       }, 1200);
     } else {
