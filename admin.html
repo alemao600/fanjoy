@@ -644,11 +644,23 @@
 
         <div class="card stack">
           <h3 style="margin:0;">Segurança do Painel</h3>
-          <p class="muted">A senha do painel fica protegida nas variáveis de ambiente da Vercel. Para trocar, altere `ADMIN_USERNAME` e `ADMIN_PASSWORD` em Project Settings > Environment Variables e faça um novo deploy.</p>
+          <p class="muted">Redefina o usuário e a senha do painel por aqui. A senha fica protegida no backend e nunca aparece no navegador.</p>
           <div class="grid">
             <label>Usuário em sessão<input id="adminCurrentUser" readonly /></label>
             <label>Status<input value="Autenticação protegida pelo backend" readonly /></label>
           </div>
+          <div class="grid">
+            <label>Novo usuário<input id="adminNewUser" autocomplete="username" placeholder="Fanjoy" /></label>
+            <label>Senha atual<input id="adminCurrentPassword" type="password" autocomplete="current-password" placeholder="Digite a senha atual" /></label>
+          </div>
+          <div class="grid">
+            <label>Nova senha<input id="adminNewPassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" /></label>
+            <label>Confirmar nova senha<input id="adminConfirmPassword" type="password" autocomplete="new-password" placeholder="Repita a nova senha" /></label>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="changeAdminCredentials()">Salvar nova senha</button>
+          </div>
+          <span class="status" id="adminSecurityStatus"></span>
         </div>
       </div>
     </section>
@@ -1647,6 +1659,54 @@
       setStatus("toolsStatus", "Configurações resetadas.");
     }
 
+    async function changeAdminCredentials() {
+      const currentUsername = sessionStorage.getItem("fanjoy_admin_user") || "";
+      const newUsername = document.getElementById("adminNewUser").value.trim();
+      const currentPassword = document.getElementById("adminCurrentPassword").value;
+      const newPassword = document.getElementById("adminNewPassword").value;
+      const confirmPassword = document.getElementById("adminConfirmPassword").value;
+      const adminToken = sessionStorage.getItem("fanjoy_admin_token");
+
+      if (!adminToken) {
+        setStatus("adminSecurityStatus", "Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+      if (!newUsername || !currentPassword || !newPassword || !confirmPassword) {
+        setStatus("adminSecurityStatus", "Preencha todos os campos de segurança.", "error");
+        return;
+      }
+      if (newPassword.length < 8) {
+        setStatus("adminSecurityStatus", "A nova senha deve ter pelo menos 8 caracteres.", "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setStatus("adminSecurityStatus", "A confirmação da nova senha não confere.", "error");
+        return;
+      }
+
+      try {
+        const resp = await fetch("/api/admin-credentials", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": adminToken
+          },
+          body: JSON.stringify({ currentUsername, currentPassword, newUsername, newPassword })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.success) throw new Error(data.message || "Erro ao trocar credenciais.");
+
+        sessionStorage.setItem("fanjoy_admin_user", data.data.username);
+        document.getElementById("adminCurrentUser").value = data.data.username;
+        document.getElementById("adminCurrentPassword").value = "";
+        document.getElementById("adminNewPassword").value = "";
+        document.getElementById("adminConfirmPassword").value = "";
+        setStatus("adminSecurityStatus", "Credenciais atualizadas com segurança.");
+      } catch (error) {
+        setStatus("adminSecurityStatus", error.message || "Erro ao trocar credenciais.", "error");
+      }
+    }
+
     function logout() {
       sessionStorage.removeItem("fanjoy_admin_logged");
       sessionStorage.removeItem("fanjoy_admin_user");
@@ -1677,6 +1737,8 @@
     loadTheme();
     const adminUserInput = document.getElementById("adminCurrentUser");
     if (adminUserInput) adminUserInput.value = sessionStorage.getItem("fanjoy_admin_user") || "Admin";
+    const adminNewUserInput = document.getElementById("adminNewUser");
+    if (adminNewUserInput) adminNewUserInput.value = sessionStorage.getItem("fanjoy_admin_user") || "Fanjoy";
     writeVariantForm({});
   </script>
 </body>

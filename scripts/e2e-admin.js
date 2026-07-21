@@ -1,7 +1,7 @@
 ﻿const { chromium } = require('playwright');
 
 (async () => {
-  const base = 'https://www.rvbot.com.br';
+  const base = process.env.E2E_BASE_URL || 'https://www.fanjoy.com.br';
   const result = [];
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 920 }, acceptDownloads: true });

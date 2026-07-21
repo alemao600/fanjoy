@@ -1,7 +1,7 @@
 ﻿const { chromium } = require('playwright');
 
 (async () => {
-  const base = 'https://www.rvbot.com.br';
+  const base = process.env.E2E_BASE_URL || 'https://www.fanjoy.com.br';
   const result = [];
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -34,7 +34,7 @@
     await page.click('button:has-text("Calcular")');
     await page.waitForTimeout(1200);
     dialogs.length = 0;
-    await page.click('button:has-text("Pagar com Mercado Pago")');
+    await page.click('button:has-text("Finalizar compra")');
     await page.waitForTimeout(1200);
     const blockedByLogin = dialogs.some((m) => /login para finalizar/i.test(m));
     log('Checkout blocks when not logged', blockedByLogin, dialogs.join(' | '));
@@ -93,7 +93,7 @@
     await page.waitForTimeout(1800);
 
     dialogs.length = 0;
-    await page.click('button:has-text("Pagar com Mercado Pago")');
+    await page.click('button:has-text("Finalizar compra")');
     await page.waitForTimeout(5000);
     const url = page.url();
     const reachedMp = /mercadopago\.com/.test(url);

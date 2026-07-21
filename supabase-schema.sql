@@ -84,10 +84,18 @@ create table if not exists public.order_items (
   price numeric(10,2) not null
 );
 
+create table if not exists public.admin_credentials (
+  id text primary key default 'main',
+  username text not null,
+  password_hash text not null,
+  updated_at timestamptz default now()
+);
+
 alter table public.customers enable row level security;
 alter table public.customer_addresses enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+alter table public.admin_credentials enable row level security;
 alter table public.products enable row level security;
 alter table public.categories enable row level security;
 alter table public.product_categories enable row level security;
@@ -153,6 +161,8 @@ for select to anon, authenticated using (true);
 drop policy if exists "product_categories_auth_write" on public.product_categories;
 create policy "product_categories_auth_write" on public.product_categories
 for all to authenticated using (true) with check (true);
+
+drop policy if exists "admin_credentials_no_client_access" on public.admin_credentials;
 
 insert into public.categories (name, slug)
 values ('Camiseta', 'camiseta')
