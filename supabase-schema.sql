@@ -135,24 +135,27 @@ create policy "products_public_read" on public.products
 for select to anon, authenticated using (is_active = true);
 
 drop policy if exists "products_auth_write" on public.products;
-create policy "products_auth_write" on public.products
-for all to authenticated using (true) with check (true);
+drop policy if exists "products_service_write" on public.products;
+create policy "products_service_write" on public.products
+for all to service_role using (true) with check (true);
 
 drop policy if exists "categories_public_read" on public.categories;
 create policy "categories_public_read" on public.categories
 for select to anon, authenticated using (true);
 
 drop policy if exists "categories_auth_write" on public.categories;
-create policy "categories_auth_write" on public.categories
-for all to authenticated using (true) with check (true);
+drop policy if exists "categories_service_write" on public.categories;
+create policy "categories_service_write" on public.categories
+for all to service_role using (true) with check (true);
 
 drop policy if exists "product_categories_public_read" on public.product_categories;
 create policy "product_categories_public_read" on public.product_categories
 for select to anon, authenticated using (true);
 
 drop policy if exists "product_categories_auth_write" on public.product_categories;
-create policy "product_categories_auth_write" on public.product_categories
-for all to authenticated using (true) with check (true);
+drop policy if exists "product_categories_service_write" on public.product_categories;
+create policy "product_categories_service_write" on public.product_categories
+for all to service_role using (true) with check (true);
 
 insert into public.categories (name, slug)
 values ('Camiseta', 'camiseta')

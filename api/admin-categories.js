@@ -10,6 +10,10 @@ function slugify(value) {
     .replace(/(^-|-$)/g, '') || 'categoria';
 }
 
+function isUuid(value) {
+  return /^[0-9a-f-]{36}$/i.test(String(value || ''));
+}
+
 module.exports = async (req, res) => {
   try {
     assertAdmin(req);
@@ -17,7 +21,7 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const name = String(req.body?.name || '').trim();
       const slug = String(req.body?.slug || slugify(name)).trim();
-      if (!name) return res.status(400).json({ success: false, message: 'Nome da categoria e obrigatorio.' });
+      if (!name) return res.status(400).json({ success: false, message: 'Nome da categoria é obrigatório.' });
       const created = await sbFetch('categories?on_conflict=slug', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
@@ -28,10 +32,10 @@ module.exports = async (req, res) => {
 
     if (req.method === 'DELETE') {
       const id = String(req.query?.id || '').trim();
-      if (!id) return res.status(400).json({ success: false, message: 'id da categoria e obrigatorio.' });
+      if (!isUuid(id)) return res.status(400).json({ success: false, message: 'id da categoria é inválido.' });
       const links = await sbFetch(`product_categories?select=product_id&category_id=eq.${encodeURIComponent(id)}&limit=1`);
       if (Array.isArray(links) && links.length) {
-        return res.status(409).json({ success: false, message: 'Essa categoria esta em uso por produtos. Remova dos produtos primeiro.' });
+        return res.status(409).json({ success: false, message: 'Essa categoria está em uso por produtos. Remova dos produtos primeiro.' });
       }
       await sbFetch(`categories?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
       return res.status(200).json({ success: true, data: { deleted: true } });

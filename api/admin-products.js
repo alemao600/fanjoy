@@ -27,6 +27,10 @@ function dbProduct(payload = {}) {
   };
 }
 
+function isUuid(value) {
+  return /^[0-9a-f-]{36}$/i.test(String(value || ''));
+}
+
 async function syncProductCategories(productId, categoryNames = []) {
   await sbFetch(`product_categories?product_id=eq.${encodeURIComponent(productId)}`, { method: 'DELETE' });
   const wanted = new Set((categoryNames || []).map((x) => String(x || '').trim()).filter(Boolean));
@@ -60,7 +64,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'POST') {
       const payload = dbProduct(req.body || {});
-      if (!payload.name || payload.price <= 0) return res.status(400).json({ success: false, message: 'Nome e preco valido sao obrigatorios.' });
+      if (!payload.name || payload.price <= 0) return res.status(400).json({ success: false, message: 'Nome e preço válido são obrigatórios.' });
       const created = await sbFetch('products', { method: 'POST', body: JSON.stringify(payload) });
       const product = Array.isArray(created) ? created[0] : created;
       await syncProductCategories(product.id, req.body.categories || []);
@@ -69,9 +73,9 @@ module.exports = async (req, res) => {
 
     if (req.method === 'PATCH') {
       const { id } = req.body || {};
-      if (!id) return res.status(400).json({ success: false, message: 'id do produto e obrigatorio.' });
+      if (!isUuid(id)) return res.status(400).json({ success: false, message: 'id do produto é inválido.' });
       const payload = dbProduct(req.body || {});
-      if (!payload.name || payload.price <= 0) return res.status(400).json({ success: false, message: 'Nome e preco valido sao obrigatorios.' });
+      if (!payload.name || payload.price <= 0) return res.status(400).json({ success: false, message: 'Nome e preço válido são obrigatórios.' });
       const updated = await sbFetch(`products?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) });
       await syncProductCategories(id, req.body.categories || []);
       return res.status(200).json({ success: true, data: Array.isArray(updated) ? updated[0] : updated });
@@ -79,7 +83,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'DELETE') {
       const id = String(req.query?.id || '').trim();
-      if (!id) return res.status(400).json({ success: false, message: 'id do produto e obrigatorio.' });
+      if (!isUuid(id)) return res.status(400).json({ success: false, message: 'id do produto é inválido.' });
       await sbFetch(`product_categories?product_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
       try {
         await sbFetch(`products?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });

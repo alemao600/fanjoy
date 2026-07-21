@@ -1,6 +1,19 @@
-﻿let currentCustomer = null;
+let currentCustomer = null;
 let editingAddressId = null;
 let customerOrders = [];
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeJsString(value) {
+  return JSON.stringify(String(value || ''));
+}
 function getQueryParams() {
   return new URLSearchParams(window.location.search);
 }
@@ -109,13 +122,13 @@ function renderAddresses() {
 
   list.innerHTML = addresses.map((addr) => `
     <div class="address-card">
-      <h3>${addr.label || 'Endereço'}</h3>
-      <p><strong>CEP:</strong> ${addr.cep || '-'}</p>
-      <p>${addr.street || ''}, ${addr.number || ''}${addr.complement ? ' - ' + addr.complement : ''}</p>
-      <p>${addr.neighborhood || ''}, ${addr.city || ''} - ${addr.state || ''}</p>
+      <h3>${escapeHtml(addr.label || 'Endereço')}</h3>
+      <p><strong>CEP:</strong> ${escapeHtml(addr.cep || '-')}</p>
+      <p>${escapeHtml(addr.street || '')}, ${escapeHtml(addr.number || '')}${addr.complement ? ' - ' + escapeHtml(addr.complement) : ''}</p>
+      <p>${escapeHtml(addr.neighborhood || '')}, ${escapeHtml(addr.city || '')} - ${escapeHtml(addr.state || '')}</p>
       <div class="address-actions">
-        <button class="btn-small btn-edit" onclick="editAddress('${addr._id || addr.id}')">Editar</button>
-        <button class="btn-small btn-delete" onclick="deleteAddress('${addr._id || addr.id}')">Excluir</button>
+        <button class="btn-small btn-edit" onclick='editAddress(${escapeJsString(addr._id || addr.id)})'>Editar</button>
+        <button class="btn-small btn-delete" onclick='deleteAddress(${escapeJsString(addr._id || addr.id)})'>Excluir</button>
       </div>
     </div>
   `).join('');
@@ -131,10 +144,11 @@ function renderOrders(orders) {
   }
 
   list.innerHTML = orders.map((order) => {
+    const orderId = String(order.id || order._id || '');
     const actionHtml = canResumePayment(order)
       ? `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-save" type="button" onclick="resumeOrderPayment('${order.id}')">Finalizar pedido</button>
-          <button class="btn-small btn-delete" type="button" onclick="cancelPendingOrder('${order.id}')">Cancelar pedido</button>
+          <button class="btn-save" type="button" onclick='resumeOrderPayment(${escapeJsString(orderId)})'>Finalizar pedido</button>
+          <button class="btn-small btn-delete" type="button" onclick='cancelPendingOrder(${escapeJsString(orderId)})'>Cancelar pedido</button>
         </div>`
       : '';
 
@@ -142,7 +156,7 @@ function renderOrders(orders) {
     <div class="order-card">
       <div class="order-header">
         <div>
-          <div class="order-id">Pedido #${order.orderNumber || String(order._id || '').slice(-8)}</div>
+          <div class="order-id">Pedido #${escapeHtml(order.orderNumber || String(order._id || '').slice(-8))}</div>
           <div class="order-date">${FanjoyAPI.Utils.formatDate(order.createdAt)}</div>
         </div>
         <div class="order-status status-${getStatusClass(order.status)}">${getStatusLabel(order.status)}</div>
@@ -151,7 +165,7 @@ function renderOrders(orders) {
         ${(order.items || []).map((item) => `
           <div class="order-item">
             <div class="order-item-info">
-              <div class="order-item-name">${item.product?.name || 'Produto'} x${item.quantity}</div>
+              <div class="order-item-name">${escapeHtml(item.product?.name || 'Produto')} x${Number(item.quantity || 0)}</div>
               <div class="order-item-details">R$ ${Number(item.price || 0).toFixed(2)}</div>
             </div>
           </div>

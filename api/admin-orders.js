@@ -1,4 +1,4 @@
-﻿const { sbFetch, assertAdmin } = require('./_admin-common');
+const { sbFetch, assertAdmin } = require('./_admin-common');
 
 module.exports = async (req, res) => {
   try {
@@ -11,11 +11,27 @@ module.exports = async (req, res) => {
 
     if (req.method === 'PATCH') {
       const { id, status, payment_status, tracking_code } = req.body || {};
-      if (!id) return res.status(400).json({ success: false, message: 'id do pedido é obrigatório' });
+      if (!id || !/^[0-9a-f-]{36}$/i.test(String(id))) {
+        return res.status(400).json({ success: false, message: 'id do pedido é inválido' });
+      }
 
       const payload = {};
-      if (typeof status === 'string' && status) payload.status = status;
-      if (typeof payment_status === 'string' && payment_status) payload.payment_status = payment_status;
+      const allowedStatuses = new Set(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']);
+      const allowedPayments = new Set(['pending', 'approved', 'paid', 'cancelled', 'failed', 'rejected', 'in_process']);
+      if (typeof status === 'string' && status) {
+        const normalized = status.toLowerCase();
+        if (!allowedStatuses.has(normalized)) {
+          return res.status(400).json({ success: false, message: 'Status inválido' });
+        }
+        payload.status = normalized;
+      }
+      if (typeof payment_status === 'string' && payment_status) {
+        const normalizedPayment = payment_status.toLowerCase();
+        if (!allowedPayments.has(normalizedPayment)) {
+          return res.status(400).json({ success: false, message: 'Status de pagamento inválido' });
+        }
+        payload.payment_status = normalizedPayment;
+      }
       if (typeof tracking_code === 'string') payload.tracking_code = tracking_code.trim() || null;
 
       // Keep payment state aligned when admin updates order status.
@@ -30,7 +46,7 @@ module.exports = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Nenhum campo para atualizar' });
       }
 
-      const updated = await sbFetch(`orders?id=eq.${id}`, {
+      const updated = await sbFetch(`orders?id=eq.${encodeURIComponent(String(id))}`, {
         method: 'PATCH',
         body: JSON.stringify(payload)
       });

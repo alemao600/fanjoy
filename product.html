@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -126,6 +126,21 @@
         .replace(/'/g, "&#039;");
     }
 
+    function safeImageSrc(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (raw.startsWith("data:image/")) return raw;
+      try {
+        const parsed = new URL(raw, window.location.origin);
+        if (parsed.protocol === "https:" || parsed.protocol === "http:" || parsed.origin === window.location.origin) {
+          return parsed.href;
+        }
+      } catch {
+        if (/^(assets\/|\/assets\/|logo\.|\/logo\.)/i.test(raw)) return raw;
+      }
+      return "";
+    }
+
     function buildImageKey(value) {
       const raw = String(value || "").trim();
       if (!raw) return "";
@@ -238,12 +253,12 @@
         tag.textContent = currentProduct.tag;
       }
 
-      const images = currentProduct.images || [currentProduct.image];
+      const images = (currentProduct.images || [currentProduct.image]).map(safeImageSrc).filter(Boolean);
       const mainImage = document.getElementById('mainImage');
       mainImage.src = images[0] || '';
 
       const thumbs = document.getElementById('thumbs');
-      thumbs.innerHTML = images.map((img, i) => `<img src="${img}" class="${i===0?'active':''}" alt="${currentProduct.name}" onclick="setImage(${i})">`).join('');
+      thumbs.innerHTML = images.map((img, i) => `<img src="${escapeHtml(img)}" class="${i===0?'active':''}" alt="${escapeHtml(currentProduct.name)}" onclick="setImage(${i})">`).join('');
 
       const sizes = Array.isArray(currentProduct.sizes) ? currentProduct.sizes : [];
       const sizesWrap = document.getElementById('sizesWrap');
@@ -254,11 +269,11 @@
         selectedSize = sizes[0];
         document.getElementById('sizes').innerHTML = sizes.map((s, i) => {
           const safe = JSON.stringify(String(s));
-          return `<button class="${i===0?'active':''}" onclick='selectSize(${safe}, event)'>${s}</button>`;
+          return `<button class="${i===0?'active':''}" onclick='selectSize(${safe}, event)'>${escapeHtml(s)}</button>`;
         }).join('');
         const firstOption = (variantMeta.options || []).find((o) => String(o.value) === String(selectedSize));
         if (firstOption?.image) {
-          mainImage.src = firstOption.image;
+          mainImage.src = safeImageSrc(firstOption.image);
         }
       }
 
@@ -280,7 +295,7 @@
 
     function setImage(index) {
       currentImageIndex = index;
-      const images = currentProduct.images || [currentProduct.image];
+      const images = (currentProduct.images || [currentProduct.image]).map(safeImageSrc).filter(Boolean);
       document.getElementById('mainImage').src = images[index] || '';
       document.querySelectorAll('#thumbs img').forEach((img, i) => img.classList.toggle('active', i === index));
     }
@@ -291,7 +306,7 @@
       event.currentTarget.classList.add('active');
       const option = (variantMeta.options || []).find((o) => String(o.value) === String(size));
       if (option?.image) {
-        document.getElementById('mainImage').src = option.image;
+        document.getElementById('mainImage').src = safeImageSrc(option.image);
       }
     }
 
@@ -316,7 +331,7 @@
           cartKey,
           name: currentProduct.name,
           price: Number(currentProduct.price || 0),
-          image: (currentProduct.images && currentProduct.images[0]) || currentProduct.image || '',
+          image: safeImageSrc((currentProduct.images && currentProduct.images[0]) || currentProduct.image || ''),
           size,
           quantity: currentQty
         });

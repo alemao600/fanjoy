@@ -1,4 +1,4 @@
-﻿let cart = [];
+let cart = [];
 let selectedShipping = null;
 let shippingCep = "";
 
@@ -9,6 +9,21 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function safeImageSrc(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('data:image/')) return raw;
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:' || parsed.origin === window.location.origin) {
+      return parsed.href;
+    }
+  } catch {
+    if (/^(assets\/|\/assets\/|logo\.|\/logo\.)/i.test(raw)) return raw;
+  }
+  return '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,23 +77,26 @@ function renderCart() {
 
   if (summary) summary.style.display = 'block';
 
-  cartItems.innerHTML = cart.map((item) => `
+  cartItems.innerHTML = cart.map((item) => {
+    const cartKey = String(item.cartKey || '');
+    return `
     <div class="item">
-      <img src="${item.image || ''}" alt="${escapeHtml(item.name)}">
+      <img src="${escapeHtml(safeImageSrc(item.image))}" alt="${escapeHtml(item.name)}">
       <div style="flex:1;">
         <h4>${escapeHtml(item.name)}</h4>
         ${item.size ? `<p>Tamanho: ${escapeHtml(item.size)}</p>` : ''}
         <p>Preço unitário: R$ ${Number(item.price).toFixed(2)}</p>
         <div class="qty">
-          <button onclick="updateQuantity('${item.cartKey}', ${Number(item.quantity) - 1})">-</button>
+          <button onclick='updateQuantity(${JSON.stringify(cartKey)}, ${Number(item.quantity) - 1})'>-</button>
           <strong>${item.quantity}</strong>
-          <button onclick="updateQuantity('${item.cartKey}', ${Number(item.quantity) + 1})">+</button>
+          <button onclick='updateQuantity(${JSON.stringify(cartKey)}, ${Number(item.quantity) + 1})'>+</button>
         </div>
-        <button class="remove" onclick="removeFromCart('${item.cartKey}')">Remover</button>
+        <button class="remove" onclick='removeFromCart(${JSON.stringify(cartKey)})'>Remover</button>
       </div>
       <div style="font-weight:800;">R$ ${(Number(item.price) * Number(item.quantity)).toFixed(2)}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   updateCartSummary();
 }

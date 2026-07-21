@@ -1,10 +1,15 @@
-﻿const { getEnv, sbFetch } = require('./_admin-common');
+const { getEnv, sbFetch } = require('./_admin-common');
 
 function mapPaymentStatus(status) {
   if (status === 'approved') return { payment_status: 'approved', status: 'paid' };
   if (status === 'pending' || status === 'in_process') return { payment_status: 'pending', status: 'pending' };
   if (status === 'rejected' || status === 'cancelled') return { payment_status: 'failed', status: 'cancelled' };
   return { payment_status: 'pending', status: 'pending' };
+}
+
+function money(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
 }
 
 module.exports = async (req, res) => {
@@ -31,14 +36,30 @@ module.exports = async (req, res) => {
     }
 
     const orderRef = String(payment.external_reference || '').trim();
-    if (!orderRef) {
+    if (!orderRef || !/^[0-9a-f-]{36}$/i.test(orderRef)) {
       return res.status(200).json({ success: true, message: 'Sem external_reference' });
     }
 
     const mapped = mapPaymentStatus(payment.status);
+    const orders = await sbFetch(`orders?id=eq.${encodeURIComponent(orderRef)}&select=id,total`);
+    const order = orders?.[0] || null;
+    if (!order) {
+      return res.status(200).json({ success: true, message: 'Pedido não encontrado' });
+    }
+
+    if (mapped.status === 'paid') {
+      const paidAmount = money(payment.transaction_amount || payment.total_paid_amount || 0);
+      const expectedTotal = money(order.total);
+      if (Math.abs(paidAmount - expectedTotal) > 0.02) {
+        return res.status(200).json({
+          success: true,
+          message: 'Pagamento ignorado: valor diferente do pedido'
+        });
+      }
+    }
 
     // external_reference no checkout recebe orderId (uuid)
-    const updated = await sbFetch(`orders?id=eq.${orderRef}`, {
+    const updated = await sbFetch(`orders?id=eq.${encodeURIComponent(orderRef)}`, {
       method: 'PATCH',
       body: JSON.stringify(mapped)
     });

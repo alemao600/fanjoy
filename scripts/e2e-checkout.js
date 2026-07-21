@@ -1,4 +1,4 @@
-﻿const { chromium } = require('playwright');
+const { chromium } = require('playwright');
 
 (async () => {
   const base = process.env.E2E_BASE_URL || 'https://www.fanjoy.com.br';
