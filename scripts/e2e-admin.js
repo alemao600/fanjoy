@@ -44,6 +44,8 @@ const { chromium } = require('playwright');
     // Products tab + create/edit/delete
     await page.click('.tab-btn[data-tab="products"]');
     await page.waitForSelector('#tab-products.active');
+    await page.click('button:has-text("Cadastrar novo produto")');
+    await page.waitForSelector('#productFormView:not([hidden])');
     await page.fill('#name', tempProduct);
     await page.fill('#description', 'Produto de teste automático');
     await page.fill('#price', '39.90');

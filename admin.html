@@ -140,6 +140,61 @@
       gap: 12px;
     }
 
+    .products-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .products-list-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--stroke);
+    }
+
+    .products-list-head h3,
+    .product-form-head h3 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .products-list-head p,
+    .product-form-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .product-form-view[hidden],
+    .product-list-view[hidden] {
+      display: none !important;
+    }
+
+    .product-form-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .product-form-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .product-form-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--stroke);
@@ -415,96 +470,115 @@
       </div>
 
       <div id="tab-products" class="tab stack">
-        <div class="grid">
-          <div class="card stack">
-            <div class="btn-row" style="justify-content:space-between;align-items:center;">
-              <h3 style="margin:0;">Cadastro de Produto</h3>
-              <span id="productEditorMode" class="chip" style="margin:0;">Novo produto</span>
+        <div id="productListView" class="card products-shell product-list-view">
+          <div class="products-list-head">
+            <div>
+              <h3>Produtos cadastrados</h3>
+              <p>Veja, busque e edite os produtos da loja. O formulário só abre quando você for cadastrar ou editar.</p>
             </div>
-            <input type="hidden" id="productId" />
-            <label>Nome<input id="name" /></label>
-            <label>Descrição<textarea id="description"></textarea></label>
-            <div class="card" style="padding:10px;">
+            <button class="btn btn-primary" type="button" onclick="startNewProduct()">Cadastrar novo produto</button>
+          </div>
+          <label>Buscar produto<input id="productSearch" placeholder="Nome, tag, descrição" /></label>
+          <div style="max-height:640px; overflow:auto; border:1px solid #e5e7eb; border-radius:12px; padding:10px; background:#fafafa;">
+            <div id="productsRows" class="stack" style="gap:10px;"></div>
+          </div>
+          <span class="status" id="productListStatus"></span>
+        </div>
+
+        <div id="productFormView" class="product-form-view" hidden>
+          <div class="product-form-head">
+            <div>
+              <h3 id="productFormTitle">Cadastrar produto</h3>
+              <p id="productFormSubtitle">Preencha os dados do produto e salve para aparecer na loja.</p>
+            </div>
+            <div class="btn-row" style="justify-content:flex-end;">
+              <button class="btn btn-secondary" type="button" onclick="showProductList()">Voltar para produtos</button>
+              <button class="btn btn-secondary" type="button" onclick="resetProductForm()">Limpar</button>
+            </div>
+          </div>
+          <div class="product-form-layout">
+            <div class="card stack">
               <div class="btn-row" style="justify-content:space-between;align-items:center;">
-                <label style="margin:0;">Observações do Produto</label>
-                <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
-                  <input id="observationsEnabled" type="checkbox" style="width:auto;margin:0;" />
-                  Mostrar observações na página do produto
-                </label>
+                <h3 style="margin:0;">Dados do produto</h3>
+                <span id="productEditorMode" class="chip" style="margin:0;">Novo produto</span>
               </div>
-              <div id="observationsWrap" style="display:none;margin-top:8px;">
-                <textarea id="observationsText" placeholder="Ex: Observações importantes, prazo de produção, cuidados, medidas ou qualquer detalhe específico deste produto."></textarea>
-              </div>
-              <p class="muted" id="observationsHint" style="margin:8px 0 0;">
-                Desabilitado: a página do produto não mostrará bloco de observações.
-              </p>
-            </div>
-            <div class="grid" style="grid-template-columns:1fr 1fr;">
-              <label>Preço (R$)<input id="price" type="number" min="0" step="0.01" /></label>
-              <label>Estoque<input id="stock" type="number" min="0" /></label>
-            </div>
-            <label>Tag<input id="tag" placeholder="Novo, Hot, Promo" /></label>
-            <label>Texto do botão<input id="buttonText" placeholder="Comprar" /></label>
-            <label>Imagens (URL por linha)<textarea id="images" placeholder="https://...\nhttps://..."></textarea></label>
-            <div class="btn-row">
-              <button class="btn btn-secondary" type="button" onclick="document.getElementById('imageUploadInput').click()">Explorar imagens</button>
-              <span class="muted" style="align-self:center;">Seleciona da galeria/celular ou do PC</span>
-            </div>
-            <input id="imageUploadInput" type="file" accept="image/*" multiple style="display:none" />
-            <input id="variantImageUploadInput" type="file" accept="image/*" style="display:none" />
-            <div class="card" style="padding:10px;">
-              <div class="btn-row" style="justify-content:space-between;align-items:center;">
-                <label style="margin:0;">Variantes do Produto</label>
-                <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
-                  <input id="variantEnabled" type="checkbox" style="width:auto;margin:0;" />
-                  Habilitar variantes
-                </label>
-              </div>
-              <div id="variantConfigWrap" class="stack" style="gap:8px;display:none;">
-                <label style="margin:0;">
-                  Nome da variante (ex: Tamanho, Cor, Voltagem)
-                  <input id="variantAttributeName" value="Tamanho" />
-                </label>
-                <div id="variantRows" class="stack" style="gap:8px;"></div>
-                <div class="btn-row">
-                  <button class="btn btn-secondary" type="button" onclick="addVariantOption()">+ Adicionar opção</button>
+              <input type="hidden" id="productId" />
+              <label>Nome<input id="name" /></label>
+              <label>Descrição<textarea id="description"></textarea></label>
+              <div class="card" style="padding:10px;">
+                <div class="btn-row" style="justify-content:space-between;align-items:center;">
+                  <label style="margin:0;">Observações do Produto</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
+                    <input id="observationsEnabled" type="checkbox" style="width:auto;margin:0;" />
+                    Mostrar observações na página do produto
+                  </label>
                 </div>
-                <p class="muted" style="margin:0;">
-                  Cada opção pode ter estoque e foto própria. Ex: Branco, Preto, Azul.
+                <div id="observationsWrap" style="display:none;margin-top:8px;">
+                  <textarea id="observationsText" placeholder="Ex: Observações importantes, prazo de produção, cuidados, medidas ou qualquer detalhe específico deste produto."></textarea>
+                </div>
+                <p class="muted" id="observationsHint" style="margin:8px 0 0;">
+                  Desabilitado: a página do produto não mostrará bloco de observações.
                 </p>
               </div>
-              <p class="muted" id="variantDisabledHint" style="margin:8px 0 0;">
-                Variantes desabilitadas: o produto terá estoque único e sem seletor na loja.
-              </p>
+              <div class="grid" style="grid-template-columns:1fr 1fr;">
+                <label>Preço (R$)<input id="price" type="number" min="0" step="0.01" /></label>
+                <label>Estoque<input id="stock" type="number" min="0" /></label>
+              </div>
+              <label>Tag<input id="tag" placeholder="Novo, Hot, Promo" /></label>
+              <label>Texto do botão<input id="buttonText" placeholder="Comprar" /></label>
+              <label>Imagens (URL por linha)<textarea id="images" placeholder="https://...\nhttps://..."></textarea></label>
+              <div class="btn-row">
+                <button class="btn btn-secondary" type="button" onclick="document.getElementById('imageUploadInput').click()">Explorar imagens</button>
+                <span class="muted" style="align-self:center;">Seleciona da galeria/celular ou do PC</span>
+              </div>
+              <input id="imageUploadInput" type="file" accept="image/*" multiple style="display:none" />
+              <input id="variantImageUploadInput" type="file" accept="image/*" style="display:none" />
+              <div class="card" style="padding:10px;">
+                <div class="btn-row" style="justify-content:space-between;align-items:center;">
+                  <label style="margin:0;">Variantes do Produto</label>
+                  <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;text-transform:none;letter-spacing:0;">
+                    <input id="variantEnabled" type="checkbox" style="width:auto;margin:0;" />
+                    Habilitar variantes
+                  </label>
+                </div>
+                <div id="variantConfigWrap" class="stack" style="gap:8px;display:none;">
+                  <label style="margin:0;">
+                    Nome da variante (ex: Tamanho, Cor, Voltagem)
+                    <input id="variantAttributeName" value="Tamanho" />
+                  </label>
+                  <div id="variantRows" class="stack" style="gap:8px;"></div>
+                  <div class="btn-row">
+                    <button class="btn btn-secondary" type="button" onclick="addVariantOption()">+ Adicionar opção</button>
+                  </div>
+                  <p class="muted" style="margin:0;">
+                    Cada opção pode ter estoque e foto própria. Ex: Branco, Preto, Azul.
+                  </p>
+                </div>
+                <p class="muted" id="variantDisabledHint" style="margin:8px 0 0;">
+                  Variantes desabilitadas: o produto terá estoque único e sem seletor na loja.
+                </p>
+              </div>
+              <div>
+                <label>Categorias</label>
+                <div id="categoryChecks" class="muted">Carregando categorias...</div>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="saveProduct()">Salvar Produto</button>
+                <button class="btn btn-secondary" type="button" onclick="showProductList()">Cancelar</button>
+              </div>
+              <span class="status" id="productStatus"></span>
             </div>
-            <div>
-              <label>Categorias</label>
-              <div id="categoryChecks" class="muted">Carregando categorias...</div>
-            </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" onclick="saveProduct()">Salvar Produto</button>
-              <button class="btn btn-secondary" onclick="resetProductForm()">Limpar</button>
-            </div>
-            <span class="status" id="productStatus"></span>
-          </div>
 
-          <div class="card stack">
-            <div class="btn-row" style="justify-content:space-between;align-items:center;">
-              <h3 style="margin:0;">Catálogo Atual</h3>
-              <button class="btn btn-primary" type="button" onclick="startNewProduct()">+ Novo</button>
-            </div>
-            <label>Buscar produto<input id="productSearch" placeholder="Nome, tag, descrição" /></label>
-            <div style="max-height:620px; overflow:auto; border:1px solid #e5e7eb; border-radius:10px; padding:10px; background:#fafafa;">
-              <div id="productsRows" class="stack" style="gap:10px;"></div>
-            </div>
-            <div class="muted">Clique no card para editar rapidamente.</div>
-            <div id="productQuickPreview" class="card" style="padding:10px;background:#fff;">
-              <div class="muted">Selecione um produto para ver detalhes rápidos.</div>
+            <div class="card stack">
+              <h3 style="margin:0;">Prévia rápida</h3>
+              <div id="productQuickPreview" class="card" style="padding:10px;background:#fff;">
+                <div class="muted">Preencha ou selecione um produto para ver detalhes rápidos.</div>
+              </div>
+              <div class="muted">Após salvar, o produto volta para a lista principal.</div>
             </div>
           </div>
         </div>
       </div>
-
       <div id="tab-categories" class="tab stack">
         <div class="card stack">
           <h3 style="margin:0;">Gestão de Categorias</h3>
@@ -706,6 +780,31 @@
       document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
       document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add("active");
       document.getElementById(`tab-${tab}`).classList.add("active");
+      if (tab === "products") showProductList();
+    }
+
+    function showProductList() {
+      const list = document.getElementById("productListView");
+      const form = document.getElementById("productFormView");
+      if (list) list.hidden = false;
+      if (form) form.hidden = true;
+      selectedProductId = null;
+      renderProducts();
+    }
+
+    function showProductForm(mode = "new", productName = "") {
+      const list = document.getElementById("productListView");
+      const form = document.getElementById("productFormView");
+      const title = document.getElementById("productFormTitle");
+      const subtitle = document.getElementById("productFormSubtitle");
+      if (list) list.hidden = true;
+      if (form) form.hidden = false;
+      if (title) title.textContent = mode === "edit" ? "Editar produto" : "Cadastrar produto";
+      if (subtitle) {
+        subtitle.textContent = mode === "edit"
+          ? `Você está editando ${productName || "este produto"}. Salve para atualizar a loja.`
+          : "Preencha os dados do produto e salve para aparecer na loja.";
+      }
     }
 
     function setStatus(id, message, ok = true) {
@@ -1331,13 +1430,14 @@
       const mode = document.getElementById("productEditorMode");
       if (mode) mode.textContent = "Novo produto";
       const quick = document.getElementById("productQuickPreview");
-      if (quick) quick.innerHTML = '<div class="muted">Selecione um produto para ver detalhes rápidos.</div>';
+      if (quick) quick.innerHTML = '<div class="muted">Preencha ou selecione um produto para ver detalhes rápidos.</div>';
       renderProducts();
     }
 
     function startNewProduct() {
       resetProductForm();
       switchTab("products");
+      showProductForm("new");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1434,6 +1534,7 @@
       renderProducts();
 
       switchTab("products");
+      showProductForm("edit", p.name || "produto");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1500,16 +1601,17 @@
         saveProductExtrasStore(extrasStore);
       }
 
-      resetProductForm();
       await loadAll();
-      setStatus("productStatus", "Produto salvo com sucesso.");
+      resetProductForm();
+      showProductList();
+      setStatus("productListStatus", "Produto salvo com sucesso.");
     }
 
     async function deleteProduct(id) {
       if (!confirm("Excluir produto?")) return;
       const res = await adminApi(`/api/admin-products?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.success) {
-        setStatus("productStatus", `Erro: ${res.message}`, false);
+        setStatus("productListStatus", `Erro: ${res.message}`, false);
         return;
       }
       const variantStore = getVariantStore();
@@ -1520,7 +1622,8 @@
       saveProductExtrasStore(extrasStore);
       await loadAll();
       const mode = res.data?.mode === "soft" ? "arquivado" : "excluído";
-      setStatus("productStatus", `Produto ${mode} com sucesso.`);
+      showProductList();
+      setStatus("productListStatus", `Produto ${mode} com sucesso.`);
     }
 
     async function createCategory() {
