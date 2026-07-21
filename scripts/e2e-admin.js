@@ -56,24 +56,31 @@
     if (await check.count()) await check.check();
 
     // variants
-    await page.fill('.variant-stock-input[data-size="P"]', '2');
-    await page.fill('.variant-stock-input[data-size="M"]', '3');
-    await page.fill('.variant-stock-input[data-size="G"]', '4');
-    await page.fill('.variant-stock-input[data-size="GG"]', '5');
+    await page.check('#variantEnabled');
+    await page.fill('#variantAttributeName', 'Tamanho');
+    while ((await page.locator('.variant-option-row').count()) < 4) {
+      await page.click('button:has-text("Adicionar opção")');
+    }
+    const variantValues = ['P', 'M', 'G', 'GG'];
+    const variantStocks = ['2', '3', '4', '5'];
+    for (let i = 0; i < variantValues.length; i += 1) {
+      await page.locator('.variant-value-input').nth(i).fill(variantValues[i]);
+      await page.locator('.variant-stock-input').nth(i).fill(variantStocks[i]);
+    }
 
     await page.click('#tab-products button:has-text("Salvar Produto")');
     await page.waitForTimeout(1800);
-    const hasProd = await page.locator('#productsRows tr', { hasText: tempProduct }).count();
+    const hasProd = await page.locator('#productsRows', { hasText: tempProduct }).count();
     log('Criar produto', hasProd > 0, tempProduct);
 
     // Edit product price
-    const prodRow = page.locator('#productsRows tr', { hasText: tempProduct }).first();
+    const prodRow = page.locator('#productsRows .product-mini-card', { hasText: tempProduct }).first();
     await prodRow.locator('button:has-text("Editar")').click();
     await page.waitForTimeout(600);
     await page.fill('#price', '44.90');
     await page.click('#tab-products button:has-text("Salvar Produto")');
     await page.waitForTimeout(1500);
-    const updatedPrice = await page.locator('#productsRows tr', { hasText: tempProduct }).locator('td').nth(1).innerText();
+    const updatedPrice = await page.locator('#productsRows .product-mini-card', { hasText: tempProduct }).first().innerText();
     log('Editar produto', /44\.90/.test(updatedPrice), updatedPrice);
 
     // Content tab save/reload
@@ -120,12 +127,12 @@
     // Cleanup: delete product
     await page.click('.tab-btn[data-tab="products"]');
     await page.waitForSelector('#tab-products.active');
-    const row2 = page.locator('#productsRows tr', { hasText: tempProduct }).first();
+    const row2 = page.locator('#productsRows .product-mini-card', { hasText: tempProduct }).first();
     if (await row2.count()) {
       await row2.locator('button:has-text("Excluir")').click();
       await page.waitForTimeout(1200);
     }
-    const stillProd = await page.locator('#productsRows tr', { hasText: tempProduct }).count();
+    const stillProd = await page.locator('#productsRows .product-mini-card', { hasText: tempProduct }).count();
     log('Excluir produto', stillProd === 0);
 
     // Cleanup: delete category

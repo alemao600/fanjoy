@@ -1329,6 +1329,24 @@
       });
     }
 
+    async function adminApi(url, options = {}) {
+      const adminToken = sessionStorage.getItem("fanjoy_admin_token");
+      if (!adminToken) {
+        window.location.href = "login.html";
+        return { success: false, message: "Sessão expirada." };
+      }
+      const resp = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": adminToken,
+          ...(options.headers || {})
+        }
+      });
+      const data = await resp.json().catch(() => ({}));
+      return resp.ok ? data : { success: false, message: data.message || "Erro na operação." };
+    }
+
     async function handleProductImageUpload(fileList) {
       const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
       if (!files.length) return;
@@ -1436,7 +1454,10 @@
         return;
       }
 
-      const res = id ? await FanjoyAPI.Products.update(id, payload) : await FanjoyAPI.Products.create(payload);
+      const res = await adminApi("/api/admin-products" + (id ? "" : ""), {
+        method: id ? "PATCH" : "POST",
+        body: JSON.stringify(id ? { ...payload, id } : payload)
+      });
       if (!res.success) {
         setStatus("productStatus", `Erro: ${res.message}`, false);
         return;
@@ -1464,7 +1485,7 @@
 
     async function deleteProduct(id) {
       if (!confirm("Excluir produto?")) return;
-      const res = await FanjoyAPI.Products.delete(id);
+      const res = await adminApi(`/api/admin-products?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.success) {
         setStatus("productStatus", `Erro: ${res.message}`, false);
         return;
@@ -1487,7 +1508,10 @@
         return;
       }
 
-      const res = await FanjoyAPI.Categories.create({ name, slug: slugify(name) });
+      const res = await adminApi("/api/admin-categories", {
+        method: "POST",
+        body: JSON.stringify({ name, slug: slugify(name) })
+      });
       if (!res.success) {
         setStatus("categoryStatus", `Erro: ${res.message}`, false);
         return;
@@ -1510,14 +1534,9 @@
         return;
       }
 
-      const { error } = await window.supabase
-        .createClient(window.FANJOY_SUPABASE_URL, window.FANJOY_SUPABASE_ANON_KEY)
-        .from("categories")
-        .delete()
-        .eq("id", categoryId);
-
-      if (error) {
-        setStatus("categoryStatus", `Erro: ${error.message}`, false);
+      const res = await adminApi(`/api/admin-categories?id=${encodeURIComponent(categoryId)}`, { method: "DELETE" });
+      if (!res.success) {
+        setStatus("categoryStatus", `Erro: ${res.message}`, false);
         return;
       }
 
