@@ -1,5 +1,5 @@
 const { sbFetch, assertAdmin } = require('./_admin-common');
-const { hashPassword, validateAdmin } = require('./admin-login');
+const { hashPassword, validateAdmin, ADMIN_CONFIG_PRODUCT_NAME } = require('./admin-login');
 
 function normalizeUsername(value) {
   return String(value || '').trim();
@@ -32,18 +32,40 @@ module.exports = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Senha atual incorreta.' });
     }
 
-    const payload = {
-      id: 'main',
+    const admin_credentials = {
       username,
       password_hash: hashPassword(newPassword),
       updated_at: new Date().toISOString()
     };
 
-    await sbFetch('admin_credentials?on_conflict=id', {
-      method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify(payload)
-    });
+    const existing = await sbFetch(`products?select=id,extra&name=eq.${encodeURIComponent(ADMIN_CONFIG_PRODUCT_NAME)}&limit=1`);
+    const row = Array.isArray(existing) ? existing[0] : null;
+    if (row?.id) {
+      await sbFetch(`products?id=eq.${encodeURIComponent(row.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          extra: { ...(row.extra || {}), admin_credentials },
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
+      });
+    } else {
+      await sbFetch('products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: ADMIN_CONFIG_PRODUCT_NAME,
+          description: 'Fanjoy admin credentials',
+          price: 0,
+          image_url: '',
+          images: [],
+          tag: null,
+          button_text: 'Comprar',
+          stock: 0,
+          extra: { admin_credentials },
+          is_active: false
+        })
+      });
+    }
 
     return res.status(200).json({ success: true, data: { username } });
   } catch (error) {

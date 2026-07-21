@@ -6,6 +6,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 8;
 const HASH_ITERATIONS = 120000;
 const HASH_KEYLEN = 32;
+const ADMIN_CONFIG_PRODUCT_NAME = '__fanjoy_admin_credentials__';
 
 function safeEqual(a, b) {
   const left = Buffer.from(String(a || ''));
@@ -46,10 +47,13 @@ function verifyPassword(password, storedHash) {
 
 async function getStoredCredentials() {
   try {
-    const rows = await sbFetch('admin_credentials?select=username,password_hash&id=eq.main&limit=1');
-    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+    const rows = await sbFetch(`products?select=id,extra&name=eq.${encodeURIComponent(ADMIN_CONFIG_PRODUCT_NAME)}&limit=1`);
+    const extra = Array.isArray(rows) && rows[0]?.extra ? rows[0].extra : null;
+    const credentials = extra?.admin_credentials;
+    if (!credentials?.username || !credentials?.password_hash) return null;
+    return credentials;
   } catch (error) {
-    if (/admin_credentials|relation|does not exist/i.test(String(error.message || ''))) return null;
+    if (/products|relation|does not exist/i.test(String(error.message || ''))) return null;
     throw error;
   }
 }
@@ -109,3 +113,4 @@ module.exports = async (req, res) => {
 module.exports.hashPassword = hashPassword;
 module.exports.verifyPassword = verifyPassword;
 module.exports.validateAdmin = validateAdmin;
+module.exports.ADMIN_CONFIG_PRODUCT_NAME = ADMIN_CONFIG_PRODUCT_NAME;
