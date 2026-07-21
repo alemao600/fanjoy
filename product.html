@@ -154,7 +154,8 @@
 
     function enrichProduct(product) {
       const output = { ...product };
-      const variantData = getVariantStoreForProduct(output);
+      const productExtra = output.extra && typeof output.extra === "object" ? output.extra : {};
+      const variantData = productExtra.variant || getVariantStoreForProduct(output);
       if (variantData) {
         if (Array.isArray(variantData.options)) {
           variantMeta = {
@@ -262,7 +263,8 @@
       }
 
       const obs = document.getElementById('productObs');
-      const extra = getProductExtrasForProduct(currentProduct);
+      const productExtra = currentProduct.extra && typeof currentProduct.extra === "object" ? currentProduct.extra : {};
+      const extra = productExtra.observations || getProductExtrasForProduct(currentProduct);
       const fallbackEnabled = isBtsProduct(currentProduct);
       const showObs = extra?.observationsEnabled !== undefined ? !!extra.observationsEnabled : fallbackEnabled;
       const obsText = extra?.observationsText || (fallbackEnabled ? DEFAULT_BTS_OBSERVATIONS : "");

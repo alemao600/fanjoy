@@ -1,4 +1,5 @@
 -- Fanjoy schema (Supabase)
+-- Idempotent setup for storefront, customers, products and orders.
 create extension if not exists pgcrypto;
 
 create table if not exists public.customers (
@@ -45,10 +46,15 @@ create table if not exists public.products (
   tag text,
   button_text text default 'Comprar',
   stock integer not null default 0,
+  extra jsonb not null default '{}'::jsonb,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.products add column if not exists extra jsonb not null default '{}'::jsonb;
+alter table public.products add column if not exists images text[] not null default '{}';
+alter table public.products add column if not exists is_active boolean not null default true;
 
 create table if not exists public.product_categories (
   product_id uuid not null references public.products(id) on delete cascade,
@@ -86,26 +92,32 @@ alter table public.products enable row level security;
 alter table public.categories enable row level security;
 alter table public.product_categories enable row level security;
 
-create policy if not exists "customers_select_own" on public.customers
+drop policy if exists "customers_select_own" on public.customers;
+create policy "customers_select_own" on public.customers
 for select to authenticated using (auth.uid() = user_id);
 
-create policy if not exists "customers_update_own" on public.customers
+drop policy if exists "customers_update_own" on public.customers;
+create policy "customers_update_own" on public.customers
 for update to authenticated using (auth.uid() = user_id);
 
-create policy if not exists "customers_insert_own" on public.customers
+drop policy if exists "customers_insert_own" on public.customers;
+create policy "customers_insert_own" on public.customers
 for insert to authenticated with check (auth.uid() = user_id);
 
-create policy if not exists "addresses_owner_all" on public.customer_addresses
+drop policy if exists "addresses_owner_all" on public.customer_addresses;
+create policy "addresses_owner_all" on public.customer_addresses
 for all to authenticated
 using (customer_id in (select id from public.customers where user_id = auth.uid()))
 with check (customer_id in (select id from public.customers where user_id = auth.uid()));
 
-create policy if not exists "orders_owner_all" on public.orders
+drop policy if exists "orders_owner_all" on public.orders;
+create policy "orders_owner_all" on public.orders
 for all to authenticated
 using (customer_id in (select id from public.customers where user_id = auth.uid()))
 with check (customer_id in (select id from public.customers where user_id = auth.uid()));
 
-create policy if not exists "order_items_owner_all" on public.order_items
+drop policy if exists "order_items_owner_all" on public.order_items;
+create policy "order_items_owner_all" on public.order_items
 for all to authenticated
 using (order_id in (
   select o.id from public.orders o
@@ -118,11 +130,78 @@ with check (order_id in (
   where c.user_id = auth.uid()
 ));
 
-create policy if not exists "products_public_read" on public.products
+drop policy if exists "products_public_read" on public.products;
+create policy "products_public_read" on public.products
 for select to anon, authenticated using (is_active = true);
 
-create policy if not exists "categories_public_read" on public.categories
+drop policy if exists "products_auth_write" on public.products;
+create policy "products_auth_write" on public.products
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "categories_public_read" on public.categories;
+create policy "categories_public_read" on public.categories
 for select to anon, authenticated using (true);
 
-create policy if not exists "product_categories_public_read" on public.product_categories
+drop policy if exists "categories_auth_write" on public.categories;
+create policy "categories_auth_write" on public.categories
+for all to authenticated using (true) with check (true);
+
+drop policy if exists "product_categories_public_read" on public.product_categories;
+create policy "product_categories_public_read" on public.product_categories
 for select to anon, authenticated using (true);
+
+drop policy if exists "product_categories_auth_write" on public.product_categories;
+create policy "product_categories_auth_write" on public.product_categories
+for all to authenticated using (true) with check (true);
+
+insert into public.categories (name, slug)
+values ('Camiseta', 'camiseta')
+on conflict (slug) do update set name = excluded.name;
+
+with wanted as (
+  select
+    'Camiseta BTS'::text as name,
+    'Camiseta fanmade com estampa BTS. Modelagem confortável e tecido premium.'::text as description,
+    69.90::numeric(10,2) as price,
+    '/assets/products/camiseta-bts/camiseta.png'::text as image_url,
+    array[
+      '/assets/products/camiseta-bts/camiseta.png',
+      '/assets/products/camiseta-bts/camisetamodelofrente.png',
+      '/assets/products/camiseta-bts/camisetamodelocostas.png',
+      '/assets/products/camiseta-bts/tamanhos.png'
+    ]::text[] as images,
+    'Destaque'::text as tag,
+    'Comprar'::text as button_text,
+    20::integer as stock,
+    '{"variant":{"enabled":true,"attributeName":"Tamanho","options":[{"value":"P","stock":5,"image":""},{"value":"M","stock":5,"image":""},{"value":"G","stock":5,"image":""},{"value":"GG","stock":5,"image":""}]},"observations":{"observationsEnabled":true,"observationsText":"Observações Importantes: devido a costura ser realizada com maquinário numa linha de produção, há um processo manual em que os tamanhos podem oscilar entre 1cm (um centímetro) e 2cm (dois centímetros) para mais ou para menos, por isso, recomendamos que solicite sempre um tamanho maior."}}'::jsonb as extra
+), updated as (
+  update public.products p
+  set description = w.description,
+      price = w.price,
+      image_url = w.image_url,
+      images = w.images,
+      tag = w.tag,
+      button_text = w.button_text,
+      stock = w.stock,
+      extra = w.extra,
+      is_active = true,
+      updated_at = now()
+  from wanted w
+  where lower(p.name) = lower(w.name)
+  returning p.id
+), inserted as (
+  insert into public.products (name, description, price, image_url, images, tag, button_text, stock, extra, is_active)
+  select name, description, price, image_url, images, tag, button_text, stock, extra, true
+  from wanted
+  where not exists (select 1 from updated)
+  returning id
+), product_id as (
+  select id from updated
+  union all
+  select id from inserted
+), category_id as (
+  select id from public.categories where slug = 'camiseta'
+)
+insert into public.product_categories (product_id, category_id)
+select product_id.id, category_id.id from product_id, category_id
+on conflict do nothing;

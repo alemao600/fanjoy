@@ -1352,7 +1352,8 @@
       document.getElementById("buttonText").value = p.buttonText || "Comprar";
       document.getElementById("images").value = (p.images || []).join("\n");
       const extrasStore = getProductExtrasStore();
-      writeObservationsForm(extrasStore[p.id] || extrasStore[p._id] || {}, p);
+      const extra = p.extra && typeof p.extra === "object" ? p.extra : {};
+      writeObservationsForm(extra.observations || extrasStore[p.id] || extrasStore[p._id] || {}, p);
 
       const catIds = new Set((p.categories || []).map((c) => c.id));
       document.querySelectorAll("#categoryChecks input[type='checkbox']").forEach((c) => {
@@ -1360,7 +1361,7 @@
       });
 
       const variantStore = getVariantStore();
-      const stored = variantStore[p.id];
+      const stored = extra.variant || variantStore[p.id];
       writeVariantForm(stored || {});
       const mode = document.getElementById("productEditorMode");
       if (mode) mode.textContent = `Editando: ${p.name}`;
@@ -1409,6 +1410,14 @@
       payload.image = payload.images[0] || "";
       const variantData = readVariantForm();
       payload.stock = variantData.total;
+      payload.extra = {
+        variant: {
+          enabled: !!variantData.enabled,
+          attributeName: variantData.attributeName || "Variante",
+          options: Array.isArray(variantData.options) ? variantData.options : []
+        },
+        observations: readObservationsForm()
+      };
 
       if (!payload.name || payload.price <= 0) {
         setStatus("productStatus", "Preencha nome e preço válido.", false);
@@ -1432,7 +1441,7 @@
         saveVariantStore(variantStore);
 
         const extrasStore = getProductExtrasStore();
-        extrasStore[finalId] = readObservationsForm();
+        extrasStore[finalId] = payload.extra.observations;
         saveProductExtrasStore(extrasStore);
       }
 

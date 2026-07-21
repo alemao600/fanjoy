@@ -313,6 +313,7 @@
       tag: row.tag,
       buttonText: row.button_text || "Comprar",
       stock: row.stock || 0,
+      extra: row.extra && typeof row.extra === "object" ? row.extra : {},
       categories: (row.product_categories || []).map((pc) => ({
         id: pc.categories?.id,
         name: pc.categories?.name,
@@ -359,7 +360,7 @@
       try {
         const { data, error } = await sb
           .from("products")
-          .select("id, name, description, price, image_url, images, tag, button_text, stock, product_categories(categories(id, name, slug))")
+          .select("id, name, description, price, image_url, images, tag, button_text, stock, extra, product_categories(categories(id, name, slug))")
           .eq("is_active", true)
           .order("created_at", { ascending: false });
 
@@ -374,7 +375,7 @@
       try {
         const { data, error } = await sb
           .from("products")
-          .select("id, name, description, price, image_url, images, tag, button_text, stock, product_categories(categories(id, name, slug))")
+          .select("id, name, description, price, image_url, images, tag, button_text, stock, extra, product_categories(categories(id, name, slug))")
           .eq("id", id)
           .single();
         if (error) return fail(error.message);
@@ -401,6 +402,7 @@
             tag: productData.tag || null,
             button_text: productData.buttonText || "Comprar",
             stock: productData.stock || 0,
+            extra: productData.extra && typeof productData.extra === "object" ? productData.extra : {},
             is_active: true
           })
           .select()
@@ -429,7 +431,8 @@
             images: normalizedImages,
             tag: productData.tag || null,
             button_text: productData.buttonText || "Comprar",
-            stock: productData.stock || 0
+            stock: productData.stock || 0,
+            extra: productData.extra && typeof productData.extra === "object" ? productData.extra : {}
           })
           .eq("id", id)
           .select()

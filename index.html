@@ -1693,8 +1693,9 @@
       const clone = { ...product };
       clone.categories = normalizeCategoryLabels(clone);
 
+      const productExtra = clone.extra && typeof clone.extra === "object" ? clone.extra : {};
       const variantStore = JSON.parse(localStorage.getItem("fanjoy_product_variants") || "{}");
-      const variantData = variantStore[clone.id] || variantStore[clone._id] || null;
+      const variantData = productExtra.variant || variantStore[clone.id] || variantStore[clone._id] || null;
       clone.variant = { enabled: false, attributeName: "Variante", options: [] };
       if (variantData) {
         if (Array.isArray(variantData.options)) {
