@@ -1314,13 +1314,13 @@
   </footer>
 
   <div id="miniCartOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(2px);z-index:200;display:none;" onclick="toggleMiniCart(false)"></div>
-  <aside id="miniCartDrawer" style="position:fixed;top:0;right:-420px;width:min(420px,92vw);height:100vh;background:#fff;z-index:201;box-shadow:-16px 0 40px rgba(0,0,0,.2);transition:right .3s ease;display:flex;flex-direction:column;">
+  <aside id="miniCartDrawer" style="position:fixed;top:0;right:-420px;width:min(420px,92vw);height:100dvh;background:#fff;z-index:201;box-shadow:-16px 0 40px rgba(0,0,0,.2);transition:right .3s ease;display:flex;flex-direction:column;">
     <div style="padding:18px 18px 10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
       <strong style="font-size:20px;">Seu Carrinho</strong>
-      <button onclick="toggleMiniCart(false)" style="border:0;background:#f3f4f6;border-radius:8px;padding:6px 10px;cursor:pointer;">?</button>
+      <button onclick="toggleMiniCart(false)" aria-label="Fechar carrinho" style="border:0;background:#f3f4f6;border-radius:8px;padding:6px 10px;cursor:pointer;">X</button>
     </div>
     <div id="miniCartItems" style="padding:12px;overflow:auto;flex:1;"></div>
-    <div style="padding:14px;border-top:1px solid #eee;">
+    <div id="miniCartFooter" style="padding:14px;border-top:1px solid #eee;">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Subtotal</span><strong id="miniCartSubtotal">R$ 0,00</strong></div>
       <button onclick="window.location.href='cart.html'" class="btn primary" style="width:100%;">Ir para Checkout</button>
     </div>
@@ -1344,6 +1344,41 @@
     .admin-lock:hover {
       opacity: 0.7;
       transform: scale(1.2);
+    }
+
+    #miniCartDrawer {
+      max-height: 100dvh !important;
+      overflow: hidden !important;
+    }
+
+    #miniCartItems {
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 18px !important;
+    }
+
+    #miniCartFooter {
+      flex: 0 0 auto;
+      background: #fff;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+      box-shadow: 0 -12px 30px rgba(17, 24, 39, 0.06);
+    }
+
+    @media (max-width: 560px) {
+      #miniCartDrawer {
+        width: 100vw !important;
+        right: -100vw;
+      }
+
+      #miniCartItems {
+        padding: 12px 14px 20px !important;
+      }
+
+      #miniCartFooter .btn {
+        min-height: 50px;
+      }
     }
   </style>
 
@@ -1539,7 +1574,8 @@
       const drawer = document.getElementById('miniCartDrawer');
       if (!overlay || !drawer) return;
       overlay.style.display = show ? 'block' : 'none';
-      drawer.style.right = show ? '0' : '-420px';
+      drawer.style.right = show ? '0' : (window.matchMedia('(max-width: 560px)').matches ? '-100vw' : '-420px');
+      document.body.style.overflow = show ? 'hidden' : '';
       if (show) renderMiniCart();
     }
 
