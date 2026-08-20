@@ -32,6 +32,38 @@
     return { success: false, message: message || "Erro inesperado" };
   }
 
+  function isResetPasswordPage() {
+    return /\/reset-password\.html$/i.test(window.location.pathname);
+  }
+
+  function isPasswordRecoveryPending() {
+    return sessionStorage.getItem("fanjoy_password_recovery_pending") === "true";
+  }
+
+  function clearCustomerSessionState() {
+    sessionStorage.removeItem("fanjoy_customer_logged");
+    sessionStorage.removeItem("fanjoy_customer_id");
+    sessionStorage.removeItem("fanjoy_customer_name");
+    sessionStorage.removeItem("fanjoy_password_recovery_pending");
+    localStorage.removeItem("fanjoy_token");
+    localStorage.removeItem("fanjoy_session_backup");
+    localStorage.removeItem("fanjoy_supabase_auth");
+  }
+
+  async function clearPasswordRecoverySession() {
+    if (!isPasswordRecoveryPending()) return;
+    try {
+      await sb.auth.signOut();
+    } catch {
+      // Ignore cleanup failures; local state is still cleared below.
+    }
+    clearCustomerSessionState();
+  }
+
+  if (isPasswordRecoveryPending() && !isResetPasswordPage()) {
+    clearPasswordRecoverySession();
+  }
+
   function readSessionBackup() {
     try {
       return JSON.parse(localStorage.getItem("fanjoy_session_backup") || "null");
@@ -61,6 +93,11 @@
   }
 
   async function getSessionUser() {
+    if (isPasswordRecoveryPending() && !isResetPasswordPage()) {
+      await clearPasswordRecoverySession();
+      return null;
+    }
+
     const { data: userData, error: userError } = await sb.auth.getUser();
     if (!userError && userData?.user) {
       const { data: sessionData } = await sb.auth.getSession();
@@ -239,12 +276,13 @@
 
     async logout() {
       await sb.auth.signOut();
-      sessionStorage.removeItem("fanjoy_customer_logged");
-      sessionStorage.removeItem("fanjoy_customer_id");
-      sessionStorage.removeItem("fanjoy_customer_name");
-      localStorage.removeItem("fanjoy_token");
-      localStorage.removeItem("fanjoy_session_backup");
+      clearCustomerSessionState();
       window.location.href = "index.html";
+    },
+
+    async cancelPasswordRecovery(redirectTo) {
+      await clearPasswordRecoverySession();
+      if (redirectTo) window.location.href = redirectTo;
     },
 
     async recoverSessionFromUrl() {
@@ -259,7 +297,11 @@
           });
           if (error) return fail(error.message);
           if (!data?.session) return fail("Link de recuperacao invalido ou expirado");
-          writeSessionBackup(data.session);
+          sessionStorage.setItem("fanjoy_password_recovery_pending", "true");
+          sessionStorage.removeItem("fanjoy_customer_logged");
+          sessionStorage.removeItem("fanjoy_customer_id");
+          sessionStorage.removeItem("fanjoy_customer_name");
+          localStorage.removeItem("fanjoy_session_backup");
           return ok({ session: data.session });
         }
 
@@ -272,7 +314,8 @@
         const { data, error } = await sb.auth.getSession();
         if (error) return fail(error.message);
         if (!data?.session) return fail("Link de recuperacao invalido ou expirado");
-        writeSessionBackup(data.session);
+        sessionStorage.setItem("fanjoy_password_recovery_pending", "true");
+        localStorage.removeItem("fanjoy_session_backup");
         return ok({ session: data.session });
       } catch (err) {
         return fail(err.message);
@@ -284,11 +327,7 @@
         const { error } = await sb.auth.updateUser({ password: newPassword });
         if (error) return fail(error.message);
         await sb.auth.signOut();
-        sessionStorage.removeItem("fanjoy_customer_logged");
-        sessionStorage.removeItem("fanjoy_customer_id");
-        sessionStorage.removeItem("fanjoy_customer_name");
-        localStorage.removeItem("fanjoy_token");
-        localStorage.removeItem("fanjoy_session_backup");
+        clearCustomerSessionState();
         return ok({}, "Senha atualizada com sucesso");
       } catch (err) {
         return fail(err.message);
@@ -297,6 +336,7 @@
 
     isAuthenticated() {
       try {
+        if (isPasswordRecoveryPending()) return false;
         const raw = localStorage.getItem("fanjoy_supabase_auth");
         if (!raw) return false;
         const parsed = JSON.parse(raw);
@@ -307,6 +347,10 @@
     },
 
     async getAccessToken() {
+      if (isPasswordRecoveryPending() && !isResetPasswordPage()) {
+        await clearPasswordRecoverySession();
+        return null;
+      }
       const { data } = await sb.auth.getSession();
       if (data?.session?.access_token) {
         writeSessionBackup(data.session);
