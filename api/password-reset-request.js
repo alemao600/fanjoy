@@ -76,6 +76,11 @@ function getSupabaseAdmin() {
   });
 }
 
+async function sendViaSupabaseAuth(supabase, email, redirectTo) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
 function getMailer() {
   const user = getEnv('FANJOY_SMTP_USER') || getEnv('SMTP_USER');
   const pass = getEnv('FANJOY_SMTP_PASS') || getEnv('SMTP_PASS');
@@ -128,12 +133,13 @@ module.exports = async (req, res) => {
 
   try {
     const baseUrl = resolveBaseUrl(req);
+    const redirectTo = `${baseUrl}/reset-password.html`;
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email,
       options: {
-        redirectTo: `${baseUrl}/reset-password.html`
+        redirectTo
       }
     });
 
@@ -144,13 +150,18 @@ module.exports = async (req, res) => {
 
     const mailer = getMailer();
     const from = getEnv('FANJOY_SMTP_USER') || 'contato.fanjoy@gmail.com';
-    await mailer.sendMail({
-      from: `"Fanjoy" <${from}>`,
-      to: email,
-      subject: 'Recuperacao de senha Fanjoy',
-      text: `Use este link para redefinir sua senha Fanjoy: ${data.properties.action_link}`,
-      html: buildEmailHtml(data.properties.action_link)
-    });
+    try {
+      await mailer.sendMail({
+        from: `"Fanjoy" <${from}>`,
+        to: email,
+        subject: 'Recuperacao de senha Fanjoy',
+        text: `Use este link para redefinir sua senha Fanjoy: ${data.properties.action_link}`,
+        html: buildEmailHtml(data.properties.action_link)
+      });
+    } catch (mailError) {
+      console.error('Falha SMTP; usando fallback Supabase:', mailError.message);
+      await sendViaSupabaseAuth(supabase, email, redirectTo);
+    }
 
     return json(res, 200, generic);
   } catch (error) {
