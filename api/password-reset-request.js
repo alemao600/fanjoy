@@ -160,7 +160,16 @@ module.exports = async (req, res) => {
       });
     } catch (mailError) {
       console.error('Falha SMTP; usando fallback Supabase:', mailError.message);
-      await sendViaSupabaseAuth(supabase, email, redirectTo);
+      try {
+        await sendViaSupabaseAuth(supabase, email, redirectTo);
+      } catch (fallbackError) {
+        const fallbackMessage = String(fallbackError?.message || '');
+        if (/security purposes|rate limit|after \d+ seconds/i.test(fallbackMessage)) {
+          console.error('Recuperacao limitada temporariamente pelo Supabase:', fallbackMessage);
+          return json(res, 200, generic);
+        }
+        throw fallbackError;
+      }
     }
 
     return json(res, 200, generic);
