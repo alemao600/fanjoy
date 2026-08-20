@@ -22,16 +22,19 @@ delete from public.products
 where name = '__fanjoy_admin_credentials__';
 
 drop policy if exists "products_auth_write" on public.products;
+drop policy if exists "products_write_all" on public.products;
 drop policy if exists "products_service_write" on public.products;
 create policy "products_service_write" on public.products
 for all to service_role using (true) with check (true);
 
 drop policy if exists "categories_auth_write" on public.categories;
+drop policy if exists "categories_write_all" on public.categories;
 drop policy if exists "categories_service_write" on public.categories;
 create policy "categories_service_write" on public.categories
 for all to service_role using (true) with check (true);
 
 drop policy if exists "product_categories_auth_write" on public.product_categories;
+drop policy if exists "product_categories_write_all" on public.product_categories;
 drop policy if exists "product_categories_service_write" on public.product_categories;
 create policy "product_categories_service_write" on public.product_categories
 for all to service_role using (true) with check (true);
