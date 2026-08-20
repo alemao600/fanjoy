@@ -96,17 +96,27 @@ function getMailer() {
 
 function buildEmailHtml(resetUrl) {
   return `
-    <div style="font-family:Arial,sans-serif;background:#fff7fc;padding:24px;color:#1f2937;">
-      <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #f7c6e7;border-radius:18px;padding:28px;">
-        <h1 style="margin:0 0 12px;color:#d946ef;">Redefinir senha Fanjoy</h1>
-        <p style="font-size:15px;line-height:1.6;">Recebemos uma solicitação para redefinir a senha da sua conta Fanjoy.</p>
-        <p style="font-size:15px;line-height:1.6;">Clique no botão abaixo para criar uma nova senha:</p>
-        <p style="margin:24px 0;">
-          <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#ff6bce,#7c3aed);color:#fff;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:700;">
-            Redefinir minha senha
-          </a>
-        </p>
-        <p style="font-size:13px;color:#6b7280;line-height:1.5;">Se você não pediu essa alteração, ignore este e-mail. Sua senha atual continuará igual.</p>
+    <div style="margin:0;padding:0;background:#f8fafc;">
+      <div style="max-width:560px;margin:0 auto;padding:28px 16px;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;">
+          <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;color:#111827;font-weight:700;">Redefinir senha Fanjoy</h1>
+          <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#374151;">Recebemos uma solicitação para redefinir a senha da sua conta Fanjoy.</p>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:#374151;">Clique no botão abaixo para criar uma nova senha:</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 22px;">
+            <tr>
+              <td bgcolor="#d946ef" style="border-radius:10px;">
+                <a href="${resetUrl}" style="display:inline-block;padding:14px 22px;font-size:15px;font-weight:700;color:#ffffff !important;text-decoration:none;background:#d946ef;border-radius:10px;">
+                  Redefinir minha senha
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#6b7280;">Se o botão não funcionar, copie e cole este link no navegador:</p>
+          <p style="margin:0 0 18px;font-size:13px;line-height:1.5;word-break:break-all;">
+            <a href="${resetUrl}" style="color:#2563eb !important;text-decoration:underline;">${resetUrl}</a>
+          </p>
+          <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5;">Se você não pediu essa alteração, ignore este e-mail. Sua senha atual continuará igual.</p>
+        </div>
       </div>
     </div>
   `;
@@ -153,10 +163,15 @@ module.exports = async (req, res) => {
     try {
       await mailer.sendMail({
         from: `"Fanjoy" <${from}>`,
+        replyTo: from,
         to: email,
-        subject: 'Recuperacao de senha Fanjoy',
+        subject: 'Redefinir senha da sua conta Fanjoy',
         text: `Use este link para redefinir sua senha Fanjoy: ${data.properties.action_link}`,
-        html: buildEmailHtml(data.properties.action_link)
+        html: buildEmailHtml(data.properties.action_link),
+        headers: {
+          'X-Auto-Response-Suppress': 'All',
+          'List-Unsubscribe': `<mailto:${from}>`
+        }
       });
     } catch (mailError) {
       console.error('Falha SMTP; usando fallback Supabase:', mailError.message);
