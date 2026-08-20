@@ -46,10 +46,13 @@ function resolveBaseUrl(req) {
     'fanjoy.com.br',
     'www.fanjoy.com.br',
     'fanjoy-fawn.vercel.app',
+    'fanjoy-xi.vercel.app',
     'localhost:4173',
     'localhost:3000'
   ]);
-  if (!allowedHosts.has(rawHost)) {
+  const isFanjoyVercelAlias = /^fanjoy-[a-z0-9-]+\.vercel\.app$/.test(rawHost)
+    || /^fanjoy-[a-z0-9-]+-renee-carriel-s-projects\.vercel\.app$/.test(rawHost);
+  if (!allowedHosts.has(rawHost) && !isFanjoyVercelAlias) {
     const err = new Error('Origem invalida');
     err.status = 400;
     throw err;
