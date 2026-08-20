@@ -247,6 +247,41 @@
       window.location.href = "index.html";
     },
 
+    async recoverSessionFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code) {
+          const { error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) return fail(error.message);
+        }
+
+        const { data, error } = await sb.auth.getSession();
+        if (error) return fail(error.message);
+        if (!data?.session) return fail("Link de recuperacao invalido ou expirado");
+        writeSessionBackup(data.session);
+        return ok({ session: data.session });
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
+    async updatePassword(newPassword) {
+      try {
+        const { error } = await sb.auth.updateUser({ password: newPassword });
+        if (error) return fail(error.message);
+        await sb.auth.signOut();
+        sessionStorage.removeItem("fanjoy_customer_logged");
+        sessionStorage.removeItem("fanjoy_customer_id");
+        sessionStorage.removeItem("fanjoy_customer_name");
+        localStorage.removeItem("fanjoy_token");
+        localStorage.removeItem("fanjoy_session_backup");
+        return ok({}, "Senha atualizada com sucesso");
+      } catch (err) {
+        return fail(err.message);
+      }
+    },
+
     isAuthenticated() {
       try {
         const raw = localStorage.getItem("fanjoy_supabase_auth");

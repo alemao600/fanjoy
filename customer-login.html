@@ -274,6 +274,24 @@
       color: #ff6bce;
     }
 
+    .forgot-password {
+      display: inline-flex;
+      border: 0;
+      background: transparent;
+      color: #7c3aed;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      margin: -6px 0 18px;
+    }
+
+    .forgot-password:hover {
+      color: #ff6bce;
+      text-decoration: underline;
+    }
+
     .divider {
       display: flex;
       align-items: center;
@@ -344,8 +362,29 @@
           <input type="password" id="loginPassword" required autocomplete="current-password">
         </div>
 
+        <button type="button" class="forgot-password" onclick="switchAuthTab('forgot')">Esqueci minha senha</button>
+
         <button type="submit" class="btn-submit">Entrar</button>
       </form>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgotTab" class="tab-content">
+      <div class="message error" id="forgotError"></div>
+      <div class="message success" id="forgotSuccess"></div>
+
+      <form id="forgotForm">
+        <div class="form-group">
+          <label for="forgotEmail">E-mail cadastrado</label>
+          <input type="email" id="forgotEmail" required autocomplete="email" placeholder="seuemail@exemplo.com">
+        </div>
+
+        <button type="submit" class="btn-submit">Enviar link de recuperação</button>
+      </form>
+
+      <div class="back-link" style="margin-top:16px;">
+        <a href="#" onclick="switchAuthTab('login'); return false;">Voltar para o login</a>
+      </div>
     </div>
 
     <!-- Register Form -->
@@ -401,10 +440,11 @@
       if (btn) btn.classList.add('active');
 
       document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active'));
-      if (tab === 'login') {
-        document.getElementById('loginTab').classList.add('active');
-      } else {
-        document.getElementById('registerTab').classList.add('active');
+      if (tab === 'login') document.getElementById('loginTab').classList.add('active');
+      if (tab === 'register') document.getElementById('registerTab').classList.add('active');
+      if (tab === 'forgot') {
+        document.getElementById('forgotTab').classList.add('active');
+        document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value || '';
       }
 
       document.querySelectorAll('.message').forEach((msg) => msg.classList.remove('show'));

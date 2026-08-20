@@ -19,6 +19,9 @@ function setupForms() {
 
   const registerForm = document.getElementById('registerForm');
   if (registerForm) registerForm.addEventListener('submit', handleRegister);
+
+  const forgotForm = document.getElementById('forgotForm');
+  if (forgotForm) forgotForm.addEventListener('submit', handleForgotPassword);
 }
 
 function getPostLoginRedirectUrl() {
@@ -180,6 +183,48 @@ async function handleRegister(e) {
   } catch (error) {
     console.error('Erro no registro:', error);
     showMessage('registerError', error.message || 'Erro ao criar conta. Tente novamente.');
+  }
+}
+
+async function handleForgotPassword(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email || !FanjoyAPI.Utils.validateEmail(email)) {
+    showMessage('forgotError', 'Informe um e-mail válido');
+    return;
+  }
+
+  const button = e.target.querySelector('button[type="submit"]');
+  const originalText = button ? button.textContent : '';
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Enviando...';
+  }
+
+  try {
+    const response = await fetch('/api/password-reset-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data.success === false) {
+      showMessage('forgotError', data.message || 'Não foi possível enviar agora. Tente novamente.');
+      return;
+    }
+
+    showMessage('forgotSuccess', data.message || 'Se este e-mail estiver cadastrado, enviaremos um link de recuperação.');
+    e.target.reset();
+  } catch (error) {
+    console.error('Erro ao solicitar recuperação:', error);
+    showMessage('forgotError', 'Não foi possível enviar agora. Tente novamente.');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
   }
 }
 
