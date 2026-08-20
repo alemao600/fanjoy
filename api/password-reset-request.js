@@ -60,7 +60,10 @@ function resolveBaseUrl(req) {
 
 function getSupabaseAdmin() {
   const url = getEnv('SUPABASE_URL') || getEnv('FANJOY_SUPABASE_URL');
-  const key = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const key = getEnv('SUPABASE_SERVICE_ROLE_KEY')
+    || getEnv('SUPABASE_SECRET_KEY')
+    || getEnv('SUPABASE_SERVICE_KEY')
+    || getEnv('FANJOY_SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) throw new Error('Supabase nao configurado');
   return createClient(url, key, {
     auth: {
@@ -75,8 +78,11 @@ function getMailer() {
   const pass = getEnv('FANJOY_SMTP_PASS') || getEnv('SMTP_PASS');
   if (!user || !pass) throw new Error('SMTP nao configurado');
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass }
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+    connectionTimeout: 10000
   });
 }
 
