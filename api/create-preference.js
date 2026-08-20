@@ -1,5 +1,28 @@
 const { getEnv, sbFetch } = require('./_admin-common');
 
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_ATTEMPTS = 20;
+const attempts = new Map();
+
+function getClientIp(req) {
+  return String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+}
+
+function checkRateLimit(req) {
+  const key = getClientIp(req);
+  const now = Date.now();
+  const current = attempts.get(key) || { count: 0, resetAt: now + WINDOW_MS };
+  if (now > current.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  current.count += 1;
+  attempts.set(key, current);
+  return current.count <= MAX_ATTEMPTS;
+}
+
 function money(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
@@ -120,6 +143,10 @@ module.exports = async (req, res) => {
   }
 
   try {
+    if (!checkRateLimit(req)) {
+      return res.status(429).json({ success: false, message: 'Muitas tentativas de checkout. Aguarde alguns minutos.' });
+    }
+
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) {
       return res.status(500).json({ success: false, message: 'MP_ACCESS_TOKEN não configurado' });

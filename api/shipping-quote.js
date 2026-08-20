@@ -1,9 +1,36 @@
+const WINDOW_MS = 60 * 1000;
+const MAX_ATTEMPTS = 30;
+const attempts = new Map();
+
+function getClientIp(req) {
+  return String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+}
+
+function checkRateLimit(req) {
+  const key = getClientIp(req);
+  const now = Date.now();
+  const current = attempts.get(key) || { count: 0, resetAt: now + WINDOW_MS };
+  if (now > current.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return true;
+  }
+  current.count += 1;
+  attempts.set(key, current);
+  return current.count <= MAX_ATTEMPTS;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   try {
+    if (!checkRateLimit(req)) {
+      return res.status(429).json({ success: false, message: 'Muitas cotações em pouco tempo. Aguarde alguns segundos.' });
+    }
+
     const token = process.env.MELHOR_ENVIO_TOKEN;
     const fromCep = String(process.env.STORE_FROM_CEP || '').replace(/\D/g, '');
     const baseUrl = process.env.MELHOR_ENVIO_BASE_URL || 'https://www.melhorenvio.com.br';

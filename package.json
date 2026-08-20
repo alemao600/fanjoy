@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
-    "nodemailer": "^9.0.5",
-    "vercel": "^54.4.1"
+    "nodemailer": "^9.0.5"
   },
   "devDependencies": {
-    "playwright": "^1.60.0"
+    "playwright": "^1.60.0",
+    "vercel": "^59.3.0"
   }
 }

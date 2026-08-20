@@ -758,51 +758,21 @@
   const OrdersAPI = {
     async create(orderData) {
       try {
-        const user = await getSessionUser();
-        if (!user) return fail("Não autenticado");
+        const accessToken = await AuthAPI.getAccessToken();
+        if (!accessToken) return fail("Não autenticado");
 
-        const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil não encontrado");
-
-        const now = Date.now().toString().slice(-8);
-
-        const { data: order, error: orderError } = await sb
-          .from("orders")
-          .insert({
-            customer_id: customer.id,
-            order_number: "FAJ-" + now,
-            status: "pending",
-            payment_status: "pending",
-            shipping_address: orderData.shippingAddress || {},
-            subtotal: orderData.subtotal,
-            shipping: orderData.shipping,
-            total: orderData.total
-          })
-          .select()
-          .single();
-
-        if (orderError) return fail(orderError.message);
-
-        const itemsPayload = (orderData.items || []).map((item) => ({
-          order_id: order.id,
-          product_id: item.product,
-          quantity: item.quantity,
-          price: item.price
-        }));
-
-        if (itemsPayload.length > 0) {
-          const { error: itemsError } = await sb.from("order_items").insert(itemsPayload);
-          if (itemsError) return fail(itemsError.message);
-        }
-
-        return ok({
-          _id: order.id,
-          id: order.id,
-          orderNumber: order.order_number,
-          total: Number(order.total || 0),
-          status: order.status,
-          createdAt: order.created_at
+        const response = await fetch("/api/customer-orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify(orderData || {})
         });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.success) return fail(data?.message || "Erro ao criar pedido");
+
+        return ok(data.data);
       } catch (err) {
         return fail(err.message);
       }
@@ -850,35 +820,21 @@
 
     async cancelPending(orderId) {
       try {
-        const user = await getSessionUser();
-        if (!user) return fail("Não autenticado");
+        const accessToken = await AuthAPI.getAccessToken();
+        if (!accessToken) return fail("Não autenticado");
 
-        const customer = await getCustomerProfileByUserId(user.id);
-        if (!customer) return fail("Perfil não encontrado");
+        const response = await fetch("/api/customer-orders", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ orderId })
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.success) return fail(data?.message || "Não foi possível cancelar o pedido.");
 
-        const { data: current, error: getError } = await sb
-          .from("orders")
-          .select("id, status, payment_status")
-          .eq("id", orderId)
-          .eq("customer_id", customer.id)
-          .single();
-
-        if (getError) return fail(getError.message);
-        if (!current) return fail("Pedido não encontrado");
-
-        const status = String(current.status || "").toLowerCase();
-        const paymentStatus = String(current.payment_status || "").toLowerCase();
-        const canCancel = status === "pending" || paymentStatus === "pending" || paymentStatus === "in_process";
-        if (!canCancel) return fail("Este pedido não pode mais ser cancelado.");
-
-        const { error: updateError } = await sb
-          .from("orders")
-          .update({ status: "cancelled", payment_status: "cancelled" })
-          .eq("id", orderId)
-          .eq("customer_id", customer.id);
-
-        if (updateError) return fail(updateError.message);
-        return ok({ cancelled: true });
+        return ok(data.data || { cancelled: true });
       } catch (err) {
         return fail(err.message);
       }

@@ -32,7 +32,13 @@ module.exports = async (req, res) => {
         }
         payload.payment_status = normalizedPayment;
       }
-      if (typeof tracking_code === 'string') payload.tracking_code = tracking_code.trim() || null;
+      if (typeof tracking_code === 'string') {
+        const cleanTracking = tracking_code.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+        if (cleanTracking.length > 120) {
+          return res.status(400).json({ success: false, message: 'Código de rastreio muito longo' });
+        }
+        payload.tracking_code = cleanTracking || null;
+      }
 
       // Keep payment state aligned when admin updates order status.
       if (!payload.payment_status && payload.status) {
