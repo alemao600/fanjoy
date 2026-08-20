@@ -66,9 +66,16 @@ function resolveBaseUrl(req) {
   return `${proto}://${rawHost}`;
 }
 
-function forceRecoveryRedirect(actionLink, redirectTo) {
-  const link = new URL(actionLink);
-  link.searchParams.set('redirect_to', redirectTo);
+function buildRecoveryUrl(baseUrl, properties) {
+  if (properties?.hashed_token) {
+    const link = new URL('/reset-password.html', baseUrl);
+    link.searchParams.set('token_hash', properties.hashed_token);
+    link.searchParams.set('type', properties.verification_type || 'recovery');
+    return link.toString();
+  }
+
+  const link = new URL(properties.action_link);
+  link.searchParams.set('redirect_to', `${baseUrl}/reset-password.html`);
   return link.toString();
 }
 
@@ -169,7 +176,7 @@ module.exports = async (req, res) => {
       return json(res, 200, generic);
     }
 
-    const resetLink = forceRecoveryRedirect(data.properties.action_link, redirectTo);
+    const resetLink = buildRecoveryUrl(baseUrl, data.properties);
     const mailer = getMailer();
     const from = getEnv('FANJOY_SMTP_USER') || 'contato.fanjoy@gmail.com';
     try {

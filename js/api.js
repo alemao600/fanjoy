@@ -250,6 +250,19 @@
     async recoverSessionFromUrl() {
       try {
         const params = new URLSearchParams(window.location.search);
+        const tokenHash = params.get("token_hash");
+        const type = params.get("type") || "recovery";
+        if (tokenHash) {
+          const { data, error } = await sb.auth.verifyOtp({
+            token_hash: tokenHash,
+            type
+          });
+          if (error) return fail(error.message);
+          if (!data?.session) return fail("Link de recuperacao invalido ou expirado");
+          writeSessionBackup(data.session);
+          return ok({ session: data.session });
+        }
+
         const code = params.get("code");
         if (code) {
           const { error } = await sb.auth.exchangeCodeForSession(code);
