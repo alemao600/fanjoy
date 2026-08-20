@@ -38,6 +38,11 @@ function checkRateLimit(req, email) {
 }
 
 function resolveBaseUrl(req) {
+  const configuredUrl = getEnv('FANJOY_SITE_URL') || getEnv('SITE_URL') || getEnv('PUBLIC_SITE_URL');
+  if (configuredUrl && /^https:\/\/(www\.)?fanjoy\.com\.br\/?$/.test(configuredUrl.trim())) {
+    return configuredUrl.trim().replace(/\/$/, '');
+  }
+
   const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
     .split(',')[0]
     .trim()
@@ -59,6 +64,12 @@ function resolveBaseUrl(req) {
   }
   const proto = rawHost.startsWith('localhost:') ? 'http' : 'https';
   return `${proto}://${rawHost}`;
+}
+
+function forceRecoveryRedirect(actionLink, redirectTo) {
+  const link = new URL(actionLink);
+  link.searchParams.set('redirect_to', redirectTo);
+  return link.toString();
 }
 
 function getSupabaseAdmin() {
@@ -158,6 +169,7 @@ module.exports = async (req, res) => {
       return json(res, 200, generic);
     }
 
+    const resetLink = forceRecoveryRedirect(data.properties.action_link, redirectTo);
     const mailer = getMailer();
     const from = getEnv('FANJOY_SMTP_USER') || 'contato.fanjoy@gmail.com';
     try {
@@ -166,8 +178,8 @@ module.exports = async (req, res) => {
         replyTo: from,
         to: email,
         subject: 'Redefinir senha da sua conta Fanjoy',
-        text: `Use este link para redefinir sua senha Fanjoy: ${data.properties.action_link}`,
-        html: buildEmailHtml(data.properties.action_link),
+        text: `Use este link para redefinir sua senha Fanjoy: ${resetLink}`,
+        html: buildEmailHtml(resetLink),
         headers: {
           'X-Auto-Response-Suppress': 'All',
           'List-Unsubscribe': `<mailto:${from}>`
